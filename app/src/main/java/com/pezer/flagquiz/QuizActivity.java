@@ -297,7 +297,8 @@ public class QuizActivity extends AppCompatActivity {
 
             for (int column = 0; column < 3; column++) {
                 //  Creates a new button
-                Button newGuessButton = (Button) inflater.inflate(R.layout.guess_button, null);
+                Button newGuessButton = (Button) inflater.inflate(R.layout.guess_button, currentRow, false);
+                newGuessButton.getLayoutParams().height = TableRow.LayoutParams.MATCH_PARENT;
 
                 //  Obtains a country name and sets it as the button's text
                 String filename = mFilenameList.get((row * 3) + column);
