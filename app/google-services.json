@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1072506381350",
+    "firebase_url": "https://flag-quiz-4924b.firebaseio.com",
+    "project_id": "flag-quiz-4924b",
+    "storage_bucket": "flag-quiz-4924b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1072506381350:android:e02abdde239251522572e7",
+        "android_client_info": {
+          "package_name": "com.pezer.flagquiz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1072506381350-4rq90upd2r6d59i2afrupaan8qa0384b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pezer.flagquiz",
+            "certificate_hash": "d1d416b48357869f4174d75e0201b77aa4f98e85"
+          }
+        },
+        {
+          "client_id": "1072506381350-iv8nsqhq8t4bebv35bqlbk9rredjchp2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzHm4R5rl8UIKv1JV8i26lOxTf6gykOuY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1072506381350-iv8nsqhq8t4bebv35bqlbk9rredjchp2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
