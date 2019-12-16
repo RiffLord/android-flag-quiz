@@ -11,14 +11,14 @@
     tools:context=".UserActivity">
 
     <TextView
-        android:id="@+id/usernameTextView"
+        android:id="@+id/emailTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="80dp"
         android:layout_marginEnd="300dp"
         android:layout_marginBottom="630dp"
-        android:text="Username"
+        android:text="@string/email_hint"
         android:textColor="@color/text_color"
         android:textSize="@dimen/text_size"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -26,17 +26,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/emailTextView"
+    <Button
+        android:id="@+id/logoutButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="118dp"
+        android:layout_marginStart="200dp"
         android:layout_marginTop="77dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="627dp"
-        android:text="username@mailserver.domain"
+        android:text="@string/logout"
         android:textColor="@color/text_color"
-        android:textSize="@dimen/text_size"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

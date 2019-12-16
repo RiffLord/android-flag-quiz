@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 
+import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 
 import android.graphics.drawable.Drawable;
@@ -29,23 +30,31 @@ import android.widget.TableRow;
 import android.widget.TextView;
 
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-//  TODO:   store the quiz settings (number of choices and selected regions), send to UserActivity, allowing user to save to sharedPreferences there
-
-//  TODO:   fix button layout
-
 public class QuizActivity extends AppCompatActivity {
     private static final String TAG = "QuizActivity";
 
+    //  Shared Preferences resources
+    private static final String PREF_CHOICES = "choices_sharedPref";
+    private static final String PREF_REGIONS = "regions_sharedPref";
+    SharedPreferences mQuizSettings;
+
+    //  Quiz objects & variables
     private List<String> mFilenameList;
     private List<String> mQuizCountriesList;
     private Map<String, Boolean> mRegionsMap;   //  Stores the regions used for the current quiz session
@@ -70,7 +79,7 @@ public class QuizActivity extends AppCompatActivity {
     private final int USER_MENU_ID = Menu.FIRST + 2;
     private final int HIGHSCORES_MENU_ID = Menu.FIRST + 3;
 
-
+    private FirebaseAuth mAuth;
 
     //============================== Override Methods ==============================//
 
@@ -79,12 +88,13 @@ public class QuizActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quiz);
 
+        mAuth = FirebaseAuth.getInstance();
+
         //  Initializing everything necessary for the quiz
 
         mFilenameList = new ArrayList<>();
         mQuizCountriesList = new ArrayList<>();
-        mRegionsMap = new HashMap<>();
-        m_nGuessRows = 1;
+        mRegionsMap = new HashMap<String, Boolean>();
         mRandom = new Random();
         mHandler = new Handler();
 
@@ -104,13 +114,22 @@ public class QuizActivity extends AppCompatActivity {
 
         mQuestionNumberTextView.setText(getResources().getString(R.string.question) +
                 " 1 " + getResources().getString(R.string.of) + " 10");
-
-        resetQuiz();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+
+        //  Reads the number of guess button rows from SharedPreferences, the default being 1 row.
+        mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);
+        m_nGuessRows = mQuizSettings.getInt(PREF_CHOICES, 1);
+
+        Gson gson = new Gson();
+        String jsonRegions = mQuizSettings.getString(PREF_REGIONS, null);
+        Type type = new TypeToken<HashMap<String, Boolean>>() {}.getType();
+        mRegionsMap = gson.fromJson(jsonRegions, type);
+
+        resetQuiz();
     }
 
     @Override
@@ -138,6 +157,12 @@ public class QuizActivity extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         m_nGuessRows = Integer.parseInt(choices[which].toString()) / 3;
+
+                        //  Saves the number of guesses to the SharedPreferences
+                        mQuizSettings = QuizActivity.this.getPreferences(Context.MODE_PRIVATE);
+                        SharedPreferences.Editor prefEditor = mQuizSettings.edit();
+                        prefEditor.putInt(PREF_CHOICES, m_nGuessRows).apply();
+
                         resetQuiz();
                     }
                 });
@@ -172,12 +197,19 @@ public class QuizActivity extends AppCompatActivity {
                             }
                         });
 
-                //  Promts the user to reset the quiz with the new settings
 
+                //  Promts the user to reset the quiz with the new settings
                 regionsBuilder.setPositiveButton(R.string.reset_quiz,
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
+                                mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);
+                                SharedPreferences.Editor prefEditor = mQuizSettings.edit();
+                                //  Used to transform the HashMap of included regions to a JSON object
+                                Gson gson = new Gson();
+                                String includedRegions = gson.toJson(mRegionsMap);
+                                prefEditor.putString(PREF_REGIONS, includedRegions).apply();
+
                                 resetQuiz();
                             }
                         });
@@ -344,10 +376,13 @@ public class QuizActivity extends AppCompatActivity {
                 AlertDialog.Builder quizResults = new AlertDialog.Builder(this);
                 quizResults.setTitle(R.string.reset_quiz);
 
-                //  Display the results of this game
-                quizResults.setMessage(String.format("%d %s, %.02f%% %s",
+                //  Stores the result of the quiz in a string. Locale.getDefault() is optional
+                String result = String.format(Locale.getDefault(), "%d %s, %.02f%% %s",
                         m_nTotalGuesses, getResources().getString(R.string.guesses),
-                        (1000 / (double) m_nTotalGuesses), getResources().getString(R.string.correct)));
+                        (1000 / (double) m_nTotalGuesses), getResources().getString(R.string.correct));
+
+                //  Display the results of this game
+                quizResults.setMessage(result);
                 quizResults.setCancelable(false);
 
                 quizResults.setPositiveButton(R.string.reset_quiz,

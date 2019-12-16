@@ -2,6 +2,7 @@
     <!-- Activity Titles -->
     <string name="app_name">Flag Quiz</string>
     <string name="login">Login</string>
+    <string name="logout">Log Out</string>
     <string name="user">User Info</string>
     <string name="highscores">Highscores</string>
 
