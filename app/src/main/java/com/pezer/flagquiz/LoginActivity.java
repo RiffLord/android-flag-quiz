@@ -1,6 +1,5 @@
 package com.pezer.flagquiz;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
@@ -75,22 +74,22 @@ public class LoginActivity extends AppCompatActivity {
     private void createAccount(final String email, final String pass) {
         mAuth.createUserWithEmailAndPassword(email, pass).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
-               if (task.isSuccessful()) {   //  New user created
-                   Log.d(TAG, "createUserWithEmail:success");
-                   FirebaseUser user = mAuth.getCurrentUser();
-                   signIn(email, pass);
-               } else if (task.getException() instanceof FirebaseAuthUserCollisionException) {
-                   //   If the credentials correspond to an existing user, log them in
-                   signIn(email, pass);
-               } else { //  Invalid e-mail address or password or any other error
-                   Log.w(TAG, "createUserWithEmail:failure", task.getException());
-                   Toast.makeText(LoginActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+            public void onComplete(Task<AuthResult> task) {
+                if (task.isSuccessful()) {   //  New user created
+                    Log.d(TAG, "createUserWithEmail:success");
+                    FirebaseUser user = mAuth.getCurrentUser();
+                    signIn(email, pass);
+                } else if (task.getException() instanceof FirebaseAuthUserCollisionException) {
+                    //   If the credentials correspond to an existing user, log them in
+                    signIn(email, pass);
+                } else { //  Invalid e-mail address or password or any other error
+                    Log.w(TAG, "createUserWithEmail:failure", task.getException());
+                    Toast.makeText(LoginActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
 
-                   //   Clear the edit text boxes
-                   mEmailEditText.setText("");
-                   mPassEditText.setText("");
-               }
+                    //   Clear the edit text boxes
+                    mEmailEditText.setText("");
+                    mPassEditText.setText("");
+                }
             }
         });
     }
@@ -99,7 +98,7 @@ public class LoginActivity extends AppCompatActivity {
     private void signIn(String email, String pass) {
         mAuth.signInWithEmailAndPassword(email, pass).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
+            public void onComplete(Task<AuthResult> task) {
                 if (task.isSuccessful()) {
                     Log.d(TAG, "signInWithEmail:success");
                     FirebaseUser user = mAuth.getCurrentUser();

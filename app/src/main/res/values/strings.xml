@@ -11,15 +11,11 @@
     <string name="choices">Select Number of Choices</string>
     <string name="guesses">guesses</string>
     <string name="regions">Select Regions</string>
-    <string name="more_regions_title">More Regions Required</string>
-    <string name="more_regions_message">There are not enough countries in
-        the selected regions. Please select more regions.</string>
     <string name="guess_country">Guess the Country</string>
     <string name="question">Question</string>
     <string name="correct">correct</string>
     <string name="incorrect">Incorrect!</string>
     <string name="of">of</string>
-    <string name="ok">OK</string>
     <string name="reset_quiz">Reset Quiz</string>
     <string name="flagImageViewDesc">This ImageView contains the flag to guess.</string>
 

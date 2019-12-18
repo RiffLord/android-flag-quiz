@@ -1,7 +1,5 @@
 package com.pezer.flagquiz;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -31,6 +29,7 @@ import android.widget.TextView;
 
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -80,31 +79,30 @@ public class QuizActivity extends AppCompatActivity {
     private final int HIGHSCORES_MENU_ID = Menu.FIRST + 3;
 
     private FirebaseAuth mAuth;
+    private FirebaseFirestore mScores;
 
     //============================== Override Methods ==============================//
 
+
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quiz);
 
         mAuth = FirebaseAuth.getInstance();
+        mScores = FirebaseFirestore.getInstance();
+        //  TODO: create user collection, containing score documents
 
         //  Initializing everything necessary for the quiz
 
         mFilenameList = new ArrayList<>();
         mQuizCountriesList = new ArrayList<>();
-        mRegionsMap = new HashMap<String, Boolean>();
+        mRegionsMap = new HashMap<>();
         mRandom = new Random();
         mHandler = new Handler();
 
         mShakeAnimation = AnimationUtils.loadAnimation(this, R.anim.incorrect_shake);
         mShakeAnimation.setRepeatCount(3);
-
-        //  Obtain the array of regions from strings.xml
-        String[] regionNames = getResources().getStringArray(R.array.regionsList);
-        //  Choose all regions by default
-        for (String region : regionNames) mRegionsMap.put(region, true);
 
         //  Set up GUI components
         mQuestionNumberTextView = findViewById(R.id.questionNumberTextView);
@@ -124,10 +122,20 @@ public class QuizActivity extends AppCompatActivity {
         mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);
         m_nGuessRows = mQuizSettings.getInt(PREF_CHOICES, 1);
 
-        Gson gson = new Gson();
-        String jsonRegions = mQuizSettings.getString(PREF_REGIONS, null);
-        Type type = new TypeToken<HashMap<String, Boolean>>() {}.getType();
-        mRegionsMap = gson.fromJson(jsonRegions, type);
+        if (mQuizSettings.getString(PREF_REGIONS, null) != null) {
+            Log.i(TAG, "SharedPrefs.getString: " + mQuizSettings.getString(PREF_REGIONS, null));
+            //  Retrieves the regions to include in the quiz from SharedPreferences
+            Gson gson = new Gson();
+            String jsonRegions = mQuizSettings.getString(PREF_REGIONS, null);
+            Type type = new TypeToken<HashMap<String, Boolean>>() {}.getType();
+            mRegionsMap = gson.fromJson(jsonRegions, type);
+        } else {
+            Log.i(TAG, "SharedPrefs.getString: " + mQuizSettings.getString(PREF_REGIONS, null));
+            //  Obtain the array of regions from strings.xml
+            String[] regionNames = getResources().getStringArray(R.array.regionsList);
+            //  Choose all regions by default
+            for (String region : regionNames) mRegionsMap.put(region, true);
+        }
 
         resetQuiz();
     }
@@ -143,7 +151,7 @@ public class QuizActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull final MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case CHOICES_MENU_ID:
                 //  Creates a list of the number of answer choices
@@ -163,6 +171,7 @@ public class QuizActivity extends AppCompatActivity {
                         SharedPreferences.Editor prefEditor = mQuizSettings.edit();
                         prefEditor.putInt(PREF_CHOICES, m_nGuessRows).apply();
 
+                        //  Resets the quiz with the new settings
                         resetQuiz();
                     }
                 });
@@ -203,6 +212,7 @@ public class QuizActivity extends AppCompatActivity {
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
+                                //  Stores the regions to include in the quiz to SharedPreferences
                                 mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);
                                 SharedPreferences.Editor prefEditor = mQuizSettings.edit();
                                 //  Used to transform the HashMap of included regions to a JSON object
@@ -210,6 +220,7 @@ public class QuizActivity extends AppCompatActivity {
                                 String includedRegions = gson.toJson(mRegionsMap);
                                 prefEditor.putString(PREF_REGIONS, includedRegions).apply();
 
+                                //  Resets the quiz with the new settings
                                 resetQuiz();
                             }
                         });
@@ -380,6 +391,8 @@ public class QuizActivity extends AppCompatActivity {
                 String result = String.format(Locale.getDefault(), "%d %s, %.02f%% %s",
                         m_nTotalGuesses, getResources().getString(R.string.guesses),
                         (1000 / (double) m_nTotalGuesses), getResources().getString(R.string.correct));
+
+                //  TODO: write result to Firestore here
 
                 //  Display the results of this game
                 quizResults.setMessage(result);
