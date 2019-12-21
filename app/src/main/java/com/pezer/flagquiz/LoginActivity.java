@@ -26,6 +26,8 @@ public class LoginActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth; //  Handles user account creation & login
 
+    //  TODO: add check to ensure the entered e-mail address exists
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

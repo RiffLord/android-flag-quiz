@@ -482,7 +482,14 @@ public class QuizActivity extends AppCompatActivity {
 
                         scorelist.add(quizResult);  //  Adds the current quiz result to the list
                         listMap.put("result", scorelist);
-                        snapshot.getReference().update(listMap);    //  Updates the Firestore document with the data, creating a new entry if the document doesn't exist
+                        snapshot.getReference().update(listMap).addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                if (task.isSuccessful()) Log.i(TAG, "Data written to Firestore... maybe?");
+
+                                else Log.e(TAG, "I don't know what's going on..." + task.getException());
+                            }
+                        });    //  Updates the Firestore document with the data, creating a new entry if the document doesn't exist
                     }
                 }
             });
