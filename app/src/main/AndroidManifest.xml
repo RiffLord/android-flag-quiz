@@ -17,8 +17,7 @@
             android:name=".HighscoresActivity"
             android:label="@string/highscores" />
         <activity
-            android:name=".UserActivity"
-            android:label="@string/user" />
+            android:name=".UserActivity" />
         <activity android:name=".QuizActivity" />
         <activity
             android:name=".LoginActivity"

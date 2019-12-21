@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1072506381350-vv9jd1soadum84903jn2c30o5reh2q4f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pezer.flagquiz",
+            "certificate_hash": "ce45ac267dcd878ea95197f872a661525a2c1596"
+          }
+        },
+        {
           "client_id": "1072506381350-4rq90upd2r6d59i2afrupaan8qa0384b.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

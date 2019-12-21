@@ -1,5 +1,6 @@
 package com.pezer.flagquiz;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -28,8 +29,19 @@ import android.widget.TableRow;
 import android.widget.TextView;
 
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.SetOptions;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -37,6 +49,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -91,7 +104,6 @@ public class QuizActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         mScores = FirebaseFirestore.getInstance();
-        //  TODO: create user collection, containing score documents
 
         //  Initializing everything necessary for the quiz
 
@@ -110,8 +122,9 @@ public class QuizActivity extends AppCompatActivity {
         mButtonTableLayout = findViewById(R.id.buttonTableLayout);
         mAnswerTextView = findViewById(R.id.answerTextView);
 
-        mQuestionNumberTextView.setText(getResources().getString(R.string.question) +
-                " 1 " + getResources().getString(R.string.of) + " 10");
+        String questionCounter = getResources().getString(R.string.question) +
+                " 1 " + getResources().getString(R.string.of) + " 10";
+        mQuestionNumberTextView.setText(questionCounter);
     }
 
     @Override
@@ -164,7 +177,7 @@ public class QuizActivity extends AppCompatActivity {
                 choicesBuilder.setItems(R.array.guessesList, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        m_nGuessRows = Integer.parseInt(choices[which].toString()) / 3;
+                        m_nGuessRows = Integer.parseInt(choices[which]) / 3;
 
                         //  Saves the number of guesses to the SharedPreferences
                         mQuizSettings = QuizActivity.this.getPreferences(Context.MODE_PRIVATE);
@@ -182,7 +195,7 @@ public class QuizActivity extends AppCompatActivity {
             case REGIONS_MENU_ID:
                 //  Creates a new array to store the regions names in; its size is equal to the size of the HashMap
                 //  containing the data
-                final String[] regionNames = mRegionsMap.keySet().toArray(new String[mRegionsMap.size()]);
+                final String[] regionNames = mRegionsMap.keySet().toArray(new String[0]);
 
                 //  Used to determine which regions are enabled
                 boolean[] enabledRegions = new boolean[mRegionsMap.size()];
@@ -202,7 +215,7 @@ public class QuizActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialog, int which, boolean isChecked) {
                                 //  Includes or excludes the clicked region depending on whether or not it's checked
-                                mRegionsMap.put(regionNames[which].toString(), isChecked);
+                                mRegionsMap.put(regionNames[which], isChecked);
                             }
                         });
 
@@ -303,8 +316,9 @@ public class QuizActivity extends AppCompatActivity {
         mAnswerTextView.setText("");
 
         //  Updates the number of the current question
-        mQuestionNumberTextView.setText(getResources().getString(R.string.question) + " " +
-                (m_nCorrectAnswers + 1) + " " + getResources().getString(R.string.of) + " 10");
+        String questionCounter = getResources().getString(R.string.question) + " " +
+                (m_nCorrectAnswers + 1) + " " + getResources().getString(R.string.of) + " 10";
+        mQuestionNumberTextView.setText(questionCounter);
 
         //  Extracts the region string from the image's name
         String region = nextImageName.substring(0, nextImageName.indexOf('-'));
@@ -376,7 +390,8 @@ public class QuizActivity extends AppCompatActivity {
             ++m_nCorrectAnswers;    //  Increments correct answers
 
             //  Displays the appropriate message on screen
-            mAnswerTextView.setText(answer + "!");
+            String correct = answer + "!";
+            mAnswerTextView.setText(correct);
             mAnswerTextView.setTextColor(getResources().getColor(R.color.correct_answer));
 
             disableButtons();   //  Disables the answer buttons
@@ -392,7 +407,7 @@ public class QuizActivity extends AppCompatActivity {
                         m_nTotalGuesses, getResources().getString(R.string.guesses),
                         (1000 / (double) m_nTotalGuesses), getResources().getString(R.string.correct));
 
-                //  TODO: write result to Firestore here
+                saveToFirestore(result);
 
                 //  Display the results of this game
                 quizResults.setMessage(result);
@@ -434,6 +449,43 @@ public class QuizActivity extends AppCompatActivity {
 
             //  Disables the buttons at the corresponding row
             for (int i = 0; i < tableRow.getChildCount(); ++i) tableRow.getChildAt(i).setEnabled(false);
+        }
+    }
+
+    private void saveToFirestore(final String score) {
+        if (mAuth.getCurrentUser() != null) {
+            final FirebaseUser user = mAuth.getCurrentUser();
+
+            //  Saves the score and a timestamp
+            final Map<String, String> quizResult = new HashMap<>();
+            quizResult.put("score", score);
+            quizResult.put("time", Calendar.getInstance().getTime().toString());
+
+            //  Gets a reference to the specified document from Firestore
+            DocumentReference document = mScores.collection("scoreboards").document(user.getEmail());
+            document.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+
+                @Override
+                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                    Map<String, Object> listMap = new HashMap<>();
+                    List<Map<String, String>> scorelist = new ArrayList<>();
+
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot snapshot = task.getResult();
+
+                        //  If the document exists and already contains data, retrieves it
+                        if (snapshot.exists() && snapshot.getData().get("result") != null) {
+                            Log.i(TAG, "Document exists");
+
+                            scorelist = ((List<Map<String, String>>) snapshot.getData().get("result"));
+                        }
+
+                        scorelist.add(quizResult);  //  Adds the current quiz result to the list
+                        listMap.put("result", scorelist);
+                        snapshot.getReference().update(listMap);    //  Updates the Firestore document with the data, creating a new entry if the document doesn't exist
+                    }
+                }
+            });
         }
     }
 }
