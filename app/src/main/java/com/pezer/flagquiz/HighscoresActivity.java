@@ -16,9 +16,11 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,10 +28,6 @@ public class HighscoresActivity extends AppCompatActivity {
     private static final String TAG = "HighscoresActivity";
 
     FirebaseFirestore mFirestore;
-
-    //  UI
-    ListView mHighscores;
-    List<Map<String, String>> mScoreboard;
 
 
     //  TODO: if user's own score is in the scores, onClick takes them to their personal scoreboard
@@ -41,36 +39,37 @@ public class HighscoresActivity extends AppCompatActivity {
 
         mFirestore = FirebaseFirestore.getInstance();
 
-        mScoreboard = new ArrayList<>();
-
         //  Obtains the scoreboard for this user from Firestore
         mFirestore = FirebaseFirestore.getInstance();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
         CollectionReference collection = mFirestore.collection("scoreboards");
-        collection.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+        Query query = collection;
+        query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
                 if (task.isSuccessful()) {
-                    for (DocumentSnapshot snapshot : task.getResult()) {
-                        Log.i(TAG, snapshot.getId());
-                        snapshot.getReference().collection("quiz-results").get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    for (QueryDocumentSnapshot document : task.getResult()) {
+                        Log.d(TAG, document.getId());
+                        Query highscore = document.getReference().collection("quiz-results");
+                        highscore.limit(1).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                             @Override
                             public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                List<String> mScoreboard = new ArrayList<>();
+
                                 if (task.isSuccessful()) {
-                                    for (DocumentSnapshot resultSnapshot : task.getResult()) {
-                                        Log.i(TAG, resultSnapshot.getData().get("score").toString());
+                                    for (QueryDocumentSnapshot snapshot : task.getResult()) {
+                                        Log.i(TAG, snapshot.getData().get("score").toString());
+                                        String highscore = snapshot.getReference().getParent().getParent().getId() + ": " + snapshot.getData().get("score").toString();
+                                        mScoreboard.add(highscore);
                                     }
+
+                                    ListView mHighscores = findViewById(R.id.highscoreListView);
+                                    ArrayAdapter<String> mAdapter = new ArrayAdapter<>(HighscoresActivity.this, android.R.layout.simple_list_item_1, mScoreboard);
+                                    mHighscores.setAdapter(mAdapter);
                                 }
                             }
                         });
                     }
                 }
-
             }
         });
     }

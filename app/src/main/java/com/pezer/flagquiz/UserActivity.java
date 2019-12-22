@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Adapter;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -29,7 +30,9 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.auth.User;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,10 +43,6 @@ import javax.annotation.Nullable;
 public class UserActivity extends AppCompatActivity {
     private static final String TAG = "UserActivity";
     private String mTitle = "Scoreboard";
-
-    //  UI Element used to display the user's scoreboard
-    private ListView mScores;
-    private List<Map<String, String>> mScoreboard;
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore mFirestore;
@@ -58,9 +57,6 @@ public class UserActivity extends AppCompatActivity {
         setContentView(R.layout.activity_user);
 
         mAuth = FirebaseAuth.getInstance();
-
-        mScores = findViewById(R.id.userScoreListView);
-        mScoreboard = new ArrayList<>();
     }
 
     @Override
@@ -75,14 +71,21 @@ public class UserActivity extends AppCompatActivity {
 
             //  Obtains this user's scoreboard from Firestore
             mFirestore = FirebaseFirestore.getInstance();
-            CollectionReference scores = mFirestore.collection("scoreboards").document(user.getEmail()).collection("quiz-results");
-            scores.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+            Query query = mFirestore.collection("scoreboards").document(user.getEmail()).collection("quiz-results");
+            query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                 @Override
                 public void onComplete(@NonNull Task<QuerySnapshot> task) {
                     if (task.isSuccessful()) {
-                        for (DocumentSnapshot document : task.getResult()) {
-                            Log.i(TAG, document.getData().get("score").toString());
+                        List<String> scoreboard = new ArrayList<>();
+
+                        for (QueryDocumentSnapshot snapshot : task.getResult()) {
+                            Log.i(TAG, snapshot.getData().get("score").toString());
+                            scoreboard.add(snapshot.getData().get("score").toString());
                         }
+
+                        ListView scoreList = findViewById(R.id.userScoreListView);
+                        ArrayAdapter<String> listAdapter = new ArrayAdapter<>(UserActivity.this, android.R.layout.simple_list_item_1, scoreboard);
+                        scoreList.setAdapter(listAdapter);
                     }
                 }
             });
