@@ -455,41 +455,17 @@ public class QuizActivity extends AppCompatActivity {
     private void saveToFirestore(final String score) {
         if (mAuth.getCurrentUser() != null) {
             final FirebaseUser user = mAuth.getCurrentUser();
-
-            //  Saves the score and a timestamp
-            final Map<String, String> quizResult = new HashMap<>();
+            final Map<String, Object> quizResult = new HashMap<>();
             quizResult.put("score", score);
-            quizResult.put("time", Calendar.getInstance().getTime().toString());
 
-            //  Gets a reference to the specified document from Firestore
-            DocumentReference document = mScores.collection("scoreboards").document(user.getEmail());
+            DocumentReference document = mScores.collection("scoreboards").document(user.getEmail())
+                    .collection("quiz-results").document(Calendar.getInstance().getTime().toString());
             document.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-
                 @Override
                 public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                    Map<String, Object> listMap = new HashMap<>();
-                    List<Map<String, String>> scorelist = new ArrayList<>();
-
                     if (task.isSuccessful()) {
                         DocumentSnapshot snapshot = task.getResult();
-
-                        //  If the document exists and already contains data, retrieves it
-                        if (snapshot.exists() && snapshot.getData().get("result") != null) {
-                            Log.i(TAG, "Document exists");
-
-                            scorelist = ((List<Map<String, String>>) snapshot.getData().get("result"));
-                        }
-
-                        scorelist.add(quizResult);  //  Adds the current quiz result to the list
-                        listMap.put("result", scorelist);
-                        snapshot.getReference().update(listMap).addOnCompleteListener(new OnCompleteListener<Void>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-                                if (task.isSuccessful()) Log.i(TAG, "Data written to Firestore... maybe?");
-
-                                else Log.e(TAG, "I don't know what's going on..." + task.getException());
-                            }
-                        });    //  Updates the Firestore document with the data, creating a new entry if the document doesn't exist
+                        snapshot.getReference().set(quizResult);
                     }
                 }
             });

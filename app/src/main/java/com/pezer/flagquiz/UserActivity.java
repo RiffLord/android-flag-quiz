@@ -20,6 +20,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
@@ -67,36 +68,21 @@ public class UserActivity extends AppCompatActivity {
         super.onStart();
 
         if (mAuth.getCurrentUser() != null) {
-            Log.i(TAG, mAuth.getCurrentUser().getEmail());
-            final FirebaseUser user = mAuth.getCurrentUser();
+            FirebaseUser user = mAuth.getCurrentUser();
 
-            //  Displays the user's e-mail address in the ActionBar
+            //  Displays the user's e-mail address on the ActionBar
             setTitle(user.getEmail());
 
-            //  Obtains the scoreboard for this user from Firestore
+            //  Obtains this user's scoreboard from Firestore
             mFirestore = FirebaseFirestore.getInstance();
-            DocumentReference document = mFirestore.collection("scoreboards").document(user.getEmail());
-            document.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            CollectionReference scores = mFirestore.collection("scoreboards").document(user.getEmail()).collection("quiz-results");
+            scores.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                 @Override
-                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                public void onComplete(@NonNull Task<QuerySnapshot> task) {
                     if (task.isSuccessful()) {
-                        DocumentSnapshot snapshot = task.getResult();
-
-                        if (snapshot.exists()) {
-                            Log.i(TAG, snapshot.getData().toString());
-                            Log.i(TAG, "LOOK!!! " + snapshot.getData().get("result").toString());
-                            //  GET THE LIST FROM THE SNAPSHOT AND PASS IT TO LISTVIEW ADAPTER ETC
-                            mScoreboard = ((List<Map<String, String>>) snapshot.getData().get("result"));
-                            for (int i = 0; i < mScoreboard.size(); i++) Log.i(TAG, "READING SCORES: " + mScoreboard.get(i).toString());
-
-                            ArrayAdapter<Map<String, String>> arrayAdapter = new ArrayAdapter<Map<String, String>>(UserActivity.this,
-                                    android.R.layout.simple_list_item_1,
-                                    mScoreboard);
-                            mScores.setAdapter(arrayAdapter);
-
+                        for (DocumentSnapshot document : task.getResult()) {
+                            Log.i(TAG, document.getData().get("score").toString());
                         }
-
-                        else Log.i(TAG, "No data for " + user.getEmail());
                     }
                 }
             });
