@@ -8,4 +8,5 @@
     <color name="background_color">#FFFFCC</color>
     <color name="correct_answer">@color/colorPrimary</color>
     <color name="incorrect_answer">@color/colorAccent</color>
+    <color name="auth_background">#B0000000</color>
 </resources>

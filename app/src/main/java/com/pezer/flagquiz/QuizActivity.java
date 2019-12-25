@@ -30,18 +30,12 @@ import android.widget.TextView;
 
 
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.SetOptions;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -135,18 +129,16 @@ public class QuizActivity extends AppCompatActivity {
         mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);
         m_nGuessRows = mQuizSettings.getInt(PREF_CHOICES, 1);
 
+        //  Checks SharedPreferences to see which regions to include in the quiz.
         if (mQuizSettings.getString(PREF_REGIONS, null) != null) {
-            Log.i(TAG, "SharedPrefs.getString: " + mQuizSettings.getString(PREF_REGIONS, null));
-            //  Retrieves the regions to include in the quiz from SharedPreferences
             Gson gson = new Gson();
             String jsonRegions = mQuizSettings.getString(PREF_REGIONS, null);
             Type type = new TypeToken<HashMap<String, Boolean>>() {}.getType();
             mRegionsMap = gson.fromJson(jsonRegions, type);
-        } else {
-            Log.i(TAG, "SharedPrefs.getString: " + mQuizSettings.getString(PREF_REGIONS, null));
+        } else {    //  Default settings, if nothing is stored in SharedPreferences
             //  Obtain the array of regions from strings.xml
             String[] regionNames = getResources().getStringArray(R.array.regionsList);
-            //  Choose all regions by default
+            //  Choose all regions
             for (String region : regionNames) mRegionsMap.put(region, true);
         }
 
@@ -214,26 +206,26 @@ public class QuizActivity extends AppCompatActivity {
                         new DialogInterface.OnMultiChoiceClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which, boolean isChecked) {
-                                //  Includes or excludes the clicked region depending on whether or not it's checked
+                                //  Includes or excludes the clicked region depending on whether or not it's checked.
                                 mRegionsMap.put(regionNames[which], isChecked);
                             }
                         });
 
 
-                //  Promts the user to reset the quiz with the new settings
+                //  Prompts the user to reset the quiz with the new settings.
                 regionsBuilder.setPositiveButton(R.string.reset_quiz,
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                //  Stores the regions to include in the quiz to SharedPreferences
+                                //  Stores the regions to include in the quiz to SharedPreferences.
                                 mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);
                                 SharedPreferences.Editor prefEditor = mQuizSettings.edit();
-                                //  Used to transform the HashMap of included regions to a JSON object
+                                //  Used to transform the HashMap of included regions to a JSON object.
                                 Gson gson = new Gson();
                                 String includedRegions = gson.toJson(mRegionsMap);
                                 prefEditor.putString(PREF_REGIONS, includedRegions).apply();
 
-                                //  Resets the quiz with the new settings
+                                //  Resets the quiz with the new settings.
                                 resetQuiz();
                             }
                         });
@@ -243,10 +235,12 @@ public class QuizActivity extends AppCompatActivity {
 
                 break;
             case USER_MENU_ID:
+                //  Takes the user to their personal scoreboard Activity.
                 Intent userIntent = new Intent(this, UserActivity.class);
                 startActivity(userIntent);
                 break;
             case HIGHSCORES_MENU_ID:
+                //  Takes the user to the global high scores Activity.
                 Intent scoresIntent = new Intent(this, HighscoresActivity.class);
                 startActivity(scoresIntent);
                 break;
@@ -255,6 +249,7 @@ public class QuizActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    //  Listener for the guess buttons.
     private View.OnClickListener mGuessButtonListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -265,18 +260,18 @@ public class QuizActivity extends AppCompatActivity {
     //============================== Quiz Methods ==============================//
 
     private void resetQuiz() {
-        //  AssetManager accesses the flag images
+        //  AssetManager accesses the flag images.
         AssetManager assets = getAssets();
-        mFilenameList.clear();  //  Clears the filename list when resetting quiz
+        mFilenameList.clear();  //  Clears the filename list when resetting quiz.
 
         //  Obtains the images to all regions set to true in mRegionsMap
-        //  and adds them to mFilenameList
+        //  and adds them to mFilenameList.
         try {
             Set<String> regions = mRegionsMap.keySet();
 
             for (String region : regions) {
                 if (mRegionsMap.get(region)) {
-                    //  Obtain all flag image files from the corresponding region
+                    //  Obtain all flag image files from the corresponding region.
                     String[] paths = assets.list(region);
 
                     for (String path : paths) mFilenameList.add(path.replace(".png", ""));
@@ -286,10 +281,10 @@ public class QuizActivity extends AppCompatActivity {
             Log.e(TAG, "Error loading file names", e);
         }
 
-        //  Resets the correct answer and total guess counters
+        //  Resets the correct answer and total guess counters.
         m_nCorrectAnswers = 0;
         m_nTotalGuesses = 0;
-        mQuizCountriesList.clear(); //  Clears previous list of countries in the quiz
+        mQuizCountriesList.clear(); //  Clears previous list of countries in the quiz.
 
         int flagCounter = 1;
         int numberOfFlags = mFilenameList.size();
@@ -297,7 +292,7 @@ public class QuizActivity extends AppCompatActivity {
         while (flagCounter <= 10) {
             int randomIndex = mRandom.nextInt(numberOfFlags);
 
-            //  Obtains a random filename and adds it to the quiz list if not already present
+            //  Obtains a random filename and adds it to the quiz list if not already present.
             String fileName = mFilenameList.get(randomIndex);
             if (!mQuizCountriesList.contains(fileName)) {
                 mQuizCountriesList.add(fileName);
@@ -309,21 +304,22 @@ public class QuizActivity extends AppCompatActivity {
     }
 
     private void loadNextFlag() {
-        //  Obtains the file name of the next flag and removes it from the list
+        //  Obtains the file name of the next flag and removes it from the list.
         String nextImageName = mQuizCountriesList.remove(0);
         m_sCorrectAnswer = nextImageName;
 
+        //  Clears the TextView displaying the previous answer.
         mAnswerTextView.setText("");
 
-        //  Updates the number of the current question
+        //  Updates the number of the current question.
         String questionCounter = getResources().getString(R.string.question) + " " +
                 (m_nCorrectAnswers + 1) + " " + getResources().getString(R.string.of) + " 10";
         mQuestionNumberTextView.setText(questionCounter);
 
-        //  Extracts the region string from the image's name
+        //  Extracts the region string from the image's name.
         String region = nextImageName.substring(0, nextImageName.indexOf('-'));
 
-        //  Loads the next image from the assets folder
+        //  Loads the next image from the assets folder.
         AssetManager assetManager = getAssets();
         InputStream stream;
 
@@ -337,7 +333,7 @@ public class QuizActivity extends AppCompatActivity {
             Log.e(TAG, "Error loading " + nextImageName, e);
         }
 
-        //  Clears previously displayed answer buttons
+        //  Clears previously displayed answer buttons.
         for (int row = 0; row < mButtonTableLayout.getChildCount(); ++row)
             ((TableRow) mButtonTableLayout.getChildAt(row)).removeAllViews();
 
@@ -348,7 +344,7 @@ public class QuizActivity extends AppCompatActivity {
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-        //  Adds the appropriate number of answer buttons based on the value of m_nGuessRows
+        //  Adds the appropriate number of answer buttons based on the value of m_nGuessRows.
         for (int row = 0; row < m_nGuessRows; row++) {
             TableRow currentRow = getTableRow(row);
 
@@ -357,7 +353,7 @@ public class QuizActivity extends AppCompatActivity {
                 Button newGuessButton = (Button) inflater.inflate(R.layout.guess_button, currentRow, false);
                 newGuessButton.getLayoutParams().height = TableRow.LayoutParams.MATCH_PARENT;
 
-                //  Obtains a country name and sets it as the button's text
+                //  Obtains a country name and sets it as the button's text.
                 String filename = mFilenameList.get((row * 3) + column);
                 newGuessButton.setText(getCountryName(filename));
 
@@ -366,7 +362,7 @@ public class QuizActivity extends AppCompatActivity {
             }
         }
 
-        //  Replaces a random button with the correct answer
+        //  Replaces a random button with the correct answer.
         int row = mRandom.nextInt(m_nGuessRows);
         int column = mRandom.nextInt(3);
         TableRow randomRow = getTableRow(row);
@@ -374,11 +370,13 @@ public class QuizActivity extends AppCompatActivity {
         ((Button) randomRow.getChildAt(column)).setText(countryName);
     }
 
+    //  Returns a row of guess buttons.
     private TableRow getTableRow(int row) { return (TableRow) mButtonTableLayout.getChildAt(row); }
 
-    //  Formats and returns the country name read from the file
+    //  Formats and returns the country name read from the file.
     private String getCountryName(String name) { return name.substring(name.indexOf('-') + 1).replace('_', ' '); }
 
+    //  Called when the user presses a guess button.
     private void submitGuess(Button guessButton) {
         //  Obtains the text from the button pressed by the user
         String guess = guessButton.getText().toString();
@@ -452,23 +450,45 @@ public class QuizActivity extends AppCompatActivity {
         }
     }
 
+    //  Saves the result of the current quiz session to a Firestore document representing the user
     private void saveToFirestore(final String score) {
         if (mAuth.getCurrentUser() != null) {
             final FirebaseUser user = mAuth.getCurrentUser();
             final Map<String, Object> quizResult = new HashMap<>();
             quizResult.put("score", score);
 
-            DocumentReference document = mScores.collection("scoreboards").document(user.getEmail())
-                    .collection("quiz-results").document(Calendar.getInstance().getTime().toString());
+            //  Obtains a reference to the document. The document is structured as a collection of user documents,
+            //  each one containing a collection of result. Each result is stored in a new document identified by
+            //  the current time on the user's device
+            DocumentReference document = mScores.collection("scoreboards").document(user.getEmail());
+
             document.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-                @Override
-                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot snapshot = task.getResult();
-                        snapshot.getReference().set(quizResult);
-                    }
-                }
-            });
+                        @Override
+                        public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                            if (task.isSuccessful()) {
+                                DocumentSnapshot snapshot = task.getResult();
+
+                                //  Hack to ensure the user document is instantiated.
+                                Map<String, Object> userData = new HashMap<>();
+                                userData.put("user", user.getEmail());
+                                snapshot.getReference().set(userData);
+
+                                //  Writes the result of the quiz to Firestore.
+                                snapshot.getReference().collection("quiz-results").document(Calendar.getInstance().getTime().toString())
+                                        .get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                                        if (task.isSuccessful()) {
+                                            DocumentSnapshot snapshot = task.getResult();
+                                            snapshot.getReference().set(quizResult);    //  Creates a new document with the result.
+                                        } else {
+                                            Log.e(TAG, task.getException().toString());
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    });
         }
     }
 }

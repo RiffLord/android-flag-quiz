@@ -2,18 +2,24 @@ package com.pezer.flagquiz;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -21,12 +27,19 @@ import com.google.firebase.auth.FirebaseUser;
 public class LoginActivity extends AppCompatActivity {
     private static String TAG = "LoginActivity";
 
+    //  UI Elements
     private EditText mEmailEditText;
     private EditText mPassEditText;
 
-    private FirebaseAuth mAuth; //  Handles user account creation & login
+    private LinearLayout mAuthLayout;
+    private boolean authProgress = false;
 
-    //  TODO: add check to ensure the entered e-mail address exists
+    //  Handles user account creation & login
+    private FirebaseAuth mAuth;
+    private String mError;
+
+    //  TODO: code cleanup & refactoring
+    //  TODO: add Material Design elements
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +49,8 @@ public class LoginActivity extends AppCompatActivity {
         mEmailEditText = findViewById(R.id.emailEditText);
         mPassEditText = findViewById(R.id.passwordEditText);
 
+        mAuthLayout = findViewById(R.id.authLayout);
+
         //  Initialize Firebase
         mAuth = FirebaseAuth.getInstance();
 
@@ -44,9 +59,15 @@ public class LoginActivity extends AppCompatActivity {
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!mEmailEditText.getText().toString().equals("") && !mPassEditText.getText().toString().equals(""))
+                hideKeyboard(LoginActivity.this);
+                //  Disables the layout while the authentication process lasts
+                callAuthLayout();
+                loginButton.setEnabled(false);
+                //  Ensures that the e-mail and password EditTexts aren't empty
+                if (!mEmailEditText.getText().toString().equals("") && !mPassEditText.getText().toString().equals("")) {
+                    //  TODO: add check to ensure the entered e-mail address exists
                     createAccount(mEmailEditText.getText().toString(), mPassEditText.getText().toString());
-                else {
+                } else {
                     Toast.makeText(LoginActivity.this, "Please enter valid credentials.", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -57,16 +78,15 @@ public class LoginActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
+        if (authProgress = true) restoreLayout();
+
         //  Checks if user is already signed in, upating UI accordingly
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
-            Log.i(TAG, "Current user: " + user.getEmail());
-            //  Call startQuiz
             mEmailEditText.setText(user.getEmail());
         }
     }
 
-    //
     private void startQuiz() {
         Intent loginIntent = new Intent(this, QuizActivity.class);
         startActivity(loginIntent);
@@ -78,15 +98,21 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onComplete(Task<AuthResult> task) {
                 if (task.isSuccessful()) {   //  New user created
-                    Log.d(TAG, "createUserWithEmail:success");
-                    FirebaseUser user = mAuth.getCurrentUser();
-                    signIn(email, pass);
-                } else if (task.getException() instanceof FirebaseAuthUserCollisionException) {
-                    //   If the credentials correspond to an existing user, log them in
+                    //  TODO: implement a display name for use in HighscoresActivity, check for valid e-mail address
                     signIn(email, pass);
                 } else { //  Invalid e-mail address or password or any other error
-                    Log.w(TAG, "createUserWithEmail:failure", task.getException());
-                    Toast.makeText(LoginActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                    if (task.getException() instanceof FirebaseAuthUserCollisionException) {
+                        //   If the credentials correspond to an existing user, log them in
+                        signIn(email, pass);
+                    } else if (task.getException() instanceof FirebaseAuthInvalidUserException) {
+                        //  If invalid e-mail address is given
+                        displayError(mError, task.getException());
+                    } else if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
+                        //  If wrong password is given
+                        displayError(mError, task.getException());
+                    } else {
+                        displayError(mError, task.getException());
+                    }
 
                     //   Clear the edit text boxes
                     mEmailEditText.setText("");
@@ -96,20 +122,59 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    //  Signs in a user to Firebase
+    //  Signs in an existing user to Firebase
     private void signIn(String email, String pass) {
         mAuth.signInWithEmailAndPassword(email, pass).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(Task<AuthResult> task) {
+                //  TODO: check for correct password
                 if (task.isSuccessful()) {
-                    Log.d(TAG, "signInWithEmail:success");
-                    FirebaseUser user = mAuth.getCurrentUser();
                     startQuiz();    //  Begins the quiz
                 } else {
-                    Log.w(TAG, "signInWithEmail:failure");
-                    Toast.makeText(LoginActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "signInWithEmail:failure... " + task.getException().toString());
+                    displayError(mError, task.getException());
+
+                    restoreLayout();
                 }
             }
         });
+    }
+
+    private void displayError(String error, Exception e) {
+        error = e.toString();
+
+        //  Formats the error message and displays it in a Toast.
+        Toast.makeText(LoginActivity.this, error.substring(error.lastIndexOf(": "))
+                .replace(": ", ""), Toast.LENGTH_SHORT).show();
+    }
+
+
+    private void callAuthLayout() {
+        authProgress = true;
+
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        mAuthLayout.setVisibility(View.VISIBLE);
+    }
+
+    private static void hideKeyboard(Activity activity) {
+        InputMethodManager input = (InputMethodManager) activity.getSystemService(INPUT_METHOD_SERVICE);
+
+        //  Obtains the currently focused view, allowing the correct window token to be accessed from it
+        View view = activity.getCurrentFocus();
+
+        if (view == null) view = new View(activity);
+
+        input.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    private void restoreLayout() {
+        //  Restores the original layout and makes the UI clickable
+        mAuthLayout.setVisibility(View.GONE);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        Button loginButton = findViewById(R.id.loginButton);
+        loginButton.setEnabled(true);
+
+        authProgress = false;
     }
 }

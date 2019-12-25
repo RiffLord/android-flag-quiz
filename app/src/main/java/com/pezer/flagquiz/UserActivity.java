@@ -6,50 +6,36 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Adapter;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.auth.User;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Nullable;
 
 public class UserActivity extends AppCompatActivity {
     private static final String TAG = "UserActivity";
-    private String mTitle = "Scoreboard";
-
-    private FirebaseAuth mAuth;
-    private FirebaseFirestore mFirestore;
+    //  Keys for Firestore access
+    private static final String USER_COLLECTION = "scoreboards";
+    private static final String SCORE_COLLECTION = "quiz-results";
+    private static final String SCORE_KEY = "score";
 
     //  Menu ID constants
     private final int GLOBALSCORES_MENU_ID = Menu.FIRST;
     private final int LOGOUT_MENU_ID = Menu.FIRST + 1;
+
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,29 +49,39 @@ public class UserActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
+        //  Checks if user exists/is logged in
         if (mAuth.getCurrentUser() != null) {
-            FirebaseUser user = mAuth.getCurrentUser();
+            final FirebaseUser user = mAuth.getCurrentUser();
 
             //  Displays the user's e-mail address on the ActionBar
             setTitle(user.getEmail());
 
             //  Obtains this user's scoreboard from Firestore
-            mFirestore = FirebaseFirestore.getInstance();
-            Query query = mFirestore.collection("scoreboards").document(user.getEmail()).collection("quiz-results");
-            query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+            FirebaseFirestore mFirestore = FirebaseFirestore.getInstance();
+            Query query = mFirestore.collection(USER_COLLECTION).document(user.getEmail()).collection(SCORE_COLLECTION);
+            query.orderBy(SCORE_KEY, Query.Direction.ASCENDING).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                 @Override
                 public void onComplete(@NonNull Task<QuerySnapshot> task) {
                     if (task.isSuccessful()) {
-                        List<String> scoreboard = new ArrayList<>();
+                        List<String> scoreboard = new ArrayList<>();    //  List for storing scores
 
+                        //  Iterates through the documents containing the user's scores, adding them to the list
                         for (QueryDocumentSnapshot snapshot : task.getResult()) {
-                            Log.i(TAG, snapshot.getData().get("score").toString());
-                            scoreboard.add(snapshot.getData().get("score").toString());
+                            scoreboard.add(snapshot.getData().get(SCORE_KEY).toString());
                         }
 
+                        //  Displays the user's scoreboard on screen
                         ListView scoreList = findViewById(R.id.userScoreListView);
-                        ArrayAdapter<String> listAdapter = new ArrayAdapter<>(UserActivity.this, android.R.layout.simple_list_item_1, scoreboard);
+                        ArrayAdapter<String> listAdapter = new ArrayAdapter<>(
+                                UserActivity.this,
+                                android.R.layout.simple_list_item_1,
+                                scoreboard);
                         scoreList.setAdapter(listAdapter);
+                    } else {
+                        Log.e(TAG, task.getException().toString());
+
+                        Toast.makeText(UserActivity.this, "Error reading scoreboard for " + user.getEmail(),
+                                Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -94,8 +90,8 @@ public class UserActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, GLOBALSCORES_MENU_ID, Menu.NONE, "View Global Scoreboard");
-        menu.add(Menu.NONE, LOGOUT_MENU_ID, Menu.NONE, "Log Out");
+        menu.add(Menu.NONE, GLOBALSCORES_MENU_ID, Menu.NONE, R.string.highscores);
+        menu.add(Menu.NONE, LOGOUT_MENU_ID, Menu.NONE, R.string.logout);
 
         return super.onCreateOptionsMenu(menu);
     }

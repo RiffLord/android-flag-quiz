@@ -2,15 +2,11 @@
     <!-- Activity Titles -->
     <string name="app_name">Flag Quiz</string>
     <string name="login">Login</string>
-    <string name="logout">Log Out</string>
-    <string name="user">User Info</string>
-    <string name="highscores">Highscores</string>
+    <string name="user_highscores">My Scoreboard</string>
 
     <!-- Quiz Strings -->
     <string name="quiz_title">Ten Question Flag Quiz</string>
-    <string name="choices">Select Number of Choices</string>
     <string name="guesses">guesses</string>
-    <string name="regions">Select Regions</string>
     <string name="guess_country">Guess the Country</string>
     <string name="question">Question</string>
     <string name="correct">correct</string>
@@ -18,6 +14,14 @@
     <string name="of">of</string>
     <string name="reset_quiz">Reset Quiz</string>
     <string name="flagImageViewDesc">This ImageView contains the flag to guess.</string>
+
+    <!-- Menu Strings -->
+    <string name="choices">Select Number of Choices</string>
+    <string name="regions">Select Regions</string>
+    <string name="user">User Info</string>
+    <string name="highscores">View Global Scoreboard</string>
+    <string name="quiz">Back to Quiz</string>
+    <string name="logout">Log Out</string>
 
     <!-- App Settings -->
     <string-array name="regionsList">

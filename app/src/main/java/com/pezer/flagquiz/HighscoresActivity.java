@@ -1,70 +1,96 @@
 package com.pezer.flagquiz;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class HighscoresActivity extends AppCompatActivity {
     private static final String TAG = "HighscoresActivity";
 
+    private final int QUIZ_MENU_ID = Menu.FIRST;
+
+    FirebaseAuth mAuth;
     FirebaseFirestore mFirestore;
-
-
-    //  TODO: if user's own score is in the scores, onClick takes them to their personal scoreboard
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_highscores);
 
+        mAuth = FirebaseAuth.getInstance();
         mFirestore = FirebaseFirestore.getInstance();
 
-        //  Obtains the scoreboard for this user from Firestore
+        //  Obtains the global scoreboard from Firestore
         mFirestore = FirebaseFirestore.getInstance();
-        CollectionReference collection = mFirestore.collection("scoreboards");
-        Query query = collection;
+        Query query = mFirestore.collection("scoreboards");
         query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
                 if (task.isSuccessful()) {
+                    final List<String> highscores = new ArrayList<>();
+
+                    //  Iterates through the user documents
                     for (QueryDocumentSnapshot document : task.getResult()) {
-                        Log.d(TAG, document.getId());
-                        Query highscore = document.getReference().collection("quiz-results");
-                        highscore.limit(1).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+
+                        //  Obtains the high score for each user
+                        final Query highscore = document.getReference().collection("quiz-results");
+                        highscore.limit(1).orderBy("score", Query.Direction.ASCENDING).get()
+                                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                             @Override
                             public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                                List<String> mScoreboard = new ArrayList<>();
-
                                 if (task.isSuccessful()) {
                                     for (QueryDocumentSnapshot snapshot : task.getResult()) {
-                                        Log.i(TAG, snapshot.getData().get("score").toString());
-                                        String highscore = snapshot.getReference().getParent().getParent().getId() + ": " + snapshot.getData().get("score").toString();
-                                        mScoreboard.add(highscore);
+                                        //  Stores the username and high score and adds it o the list
+                                        String highscore = snapshot.getReference().getParent()
+                                                .getParent().getId() + ": " + snapshot.getData().get("score").toString();
+
+                                        Log.i(TAG, highscore);
+                                        highscores.add(highscore);
                                     }
 
-                                    ListView mHighscores = findViewById(R.id.highscoreListView);
-                                    ArrayAdapter<String> mAdapter = new ArrayAdapter<>(HighscoresActivity.this, android.R.layout.simple_list_item_1, mScoreboard);
-                                    mHighscores.setAdapter(mAdapter);
+                                    //  TODO: order highscores
+                                    
+                                    //  Displays the high scores on screen
+                                    ListView scoreboard = findViewById(R.id.highscoreListView);
+                                    ArrayAdapter<String> mAdapter = new ArrayAdapter<>(HighscoresActivity.this,
+                                            android.R.layout.simple_list_item_1,
+                                            highscores);
+                                    scoreboard.setAdapter(mAdapter);
+
+                                    //  If user clicks on their high score, takes them to their personal scoreboard Activity
+                                    scoreboard.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                        @Override
+                                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                            String username = (String) parent.getItemAtPosition(position);
+
+                                            if (username.substring(0, username.lastIndexOf(':'))
+                                                    .equals(mAuth.getCurrentUser().getEmail())) {
+                                                Intent userScoreboardIntent = new Intent(HighscoresActivity.this,
+                                                        UserActivity.class);
+                                                startActivity(userScoreboardIntent);
+                                            }
+                                        }
+                                    });
                                 }
                             }
                         });
@@ -72,5 +98,23 @@ public class HighscoresActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(Menu.NONE, QUIZ_MENU_ID, Menu.NONE, R.string.quiz);
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case QUIZ_MENU_ID:
+                startActivity(new Intent(this, QuizActivity.class));
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 }
