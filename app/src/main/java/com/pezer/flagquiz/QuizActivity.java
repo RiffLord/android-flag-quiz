@@ -99,8 +99,6 @@ public class QuizActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mScores = FirebaseFirestore.getInstance();
 
-        Log.i(TAG, "USER DISPLAY NAME: " + mAuth.getCurrentUser().getDisplayName());
-
         //  Initializing everything necessary for the quiz
 
         mFilenameList = new ArrayList<>();
@@ -126,6 +124,8 @@ public class QuizActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+
+        //  TODO:   fix quiz restart after onPause
 
         //  Reads the number of guess button rows from SharedPreferences, the default being 1 row.
         mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);

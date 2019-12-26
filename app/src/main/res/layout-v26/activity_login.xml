@@ -26,12 +26,12 @@
         android:layout_marginBottom="373dp"
         android:ems="10"
         android:hint="@string/email_hint"
+        android:autofillHints="@string/email_hint"
         android:inputType="textEmailAddress"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:importantForAutofill="no" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Space
         android:layout_width="16dp"
@@ -51,12 +51,12 @@
         android:layout_marginBottom="312dp"
         android:ems="10"
         android:hint="@string/password_hint"
+        android:autofillHints="@string/password_hint"
         android:inputType="textPassword"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:importantForAutofill="no" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/loginButton"

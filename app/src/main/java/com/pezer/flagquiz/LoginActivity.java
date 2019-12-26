@@ -4,9 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -44,7 +42,6 @@ public class LoginActivity extends AppCompatActivity {
 
     //  Handles user account creation & login
     private FirebaseAuth mAuth;
-    private String mError;
 
     //  TODO: code cleanup & refactoring
     //  TODO: add Material Design elements
@@ -106,7 +103,7 @@ public class LoginActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
-        if (authProgress = true) restoreLayout();
+        if (authProgress) restoreLayout();
 
         //  Checks if user is already signed in, updating UI accordingly
         FirebaseUser user = mAuth.getCurrentUser();
@@ -124,24 +121,23 @@ public class LoginActivity extends AppCompatActivity {
     private void createAccount(final String email, final String pass) {
         mAuth.createUserWithEmailAndPassword(email, pass).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
-            public void onComplete(Task<AuthResult> task) {
+            public void onComplete(@NonNull Task<AuthResult> task) {
                 if (!task.isSuccessful()) {
                     try {
                         throw task.getException();
                     } catch (FirebaseAuthInvalidCredentialsException e) {
                         Log.e(TAG, "Invalid credentials..." + e.getMessage());
-                        displayError(mError, e);
+                        displayError(e);
                     } catch (FirebaseAuthUserCollisionException e) {
                         Log.e(TAG, "User with this e-mail address already exists..." + e.getMessage());
-                        displayError(mError, e);
+                        displayError(e);
                     } catch (Exception e) {
-                        displayError(mError, e);
+                        displayError(e);
                     }
 
                     clearEditTexts();
                     restoreLayout();
                 } else {
-                    Log.i(TAG, "CURRENT USER" + mAuth.getCurrentUser().getEmail());
                     setDisplayName(mAuth.getCurrentUser(), email, pass);
                 }
             }
@@ -153,11 +149,11 @@ public class LoginActivity extends AppCompatActivity {
         final Dialog displayNameDialog = new Dialog(LoginActivity.this);
         displayNameDialog.setContentView(R.layout.dialog_display_name);
 
-        Button setDisplayNameButton = (Button) displayNameDialog.findViewById(R.id.setDisplayNameButton);
+        Button setDisplayNameButton = displayNameDialog.findViewById(R.id.setDisplayNameButton);
         setDisplayNameButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                EditText editText = (EditText) displayNameDialog.findViewById(R.id.displayNameEditText);
+                EditText editText = displayNameDialog.findViewById(R.id.displayNameEditText);
                 final String displayName = editText.getText().toString();
 
                 if (!displayName.equals("")) {
@@ -173,7 +169,7 @@ public class LoginActivity extends AppCompatActivity {
 
                                 signIn(email, pass);
                             } else {
-                                displayError(mError, task.getException());
+                                displayError(task.getException());
                             }
                         }
                     });
@@ -193,18 +189,18 @@ public class LoginActivity extends AppCompatActivity {
     private void signIn(String email, String pass) {
         mAuth.signInWithEmailAndPassword(email, pass).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
-            public void onComplete(Task<AuthResult> task) {
+            public void onComplete(@NonNull Task<AuthResult> task) {
                 if (!task.isSuccessful()) {
                     try {
                         throw task.getException();
                     } catch (FirebaseAuthInvalidUserException e) {
                         Log.e(TAG, "This e-mail doesn't exist..." + e.getMessage());
-                        displayError(mError, e);
+                        displayError(e);
                     } catch (FirebaseAuthInvalidCredentialsException e) {
                         Log.e(TAG, "Wrong password..." + e.getMessage());
-                        displayError(mError, e);
+                        displayError(e);
                     } catch (Exception e) {
-                        displayError(mError, e);
+                        displayError(e);
                     }
 
                     clearEditTexts();
@@ -214,12 +210,12 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void displayError(String error, Exception e) {
-        error = e.toString();
+    private void displayError(Exception e) {
+        String error = e.toString();
 
         //  Formats the error message and displays it in a Toast.
         Toast.makeText(LoginActivity.this, error.substring(error.lastIndexOf(": "))
-                .replace(": ", ""), Toast.LENGTH_SHORT).show();
+                .replace(": ", ""), Toast.LENGTH_LONG).show();
     }
 
     private void clearEditTexts() {

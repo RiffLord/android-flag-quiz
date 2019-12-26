@@ -64,12 +64,11 @@ public class HighscoresActivity extends AppCompatActivity {
                                         //  Stores the username and high score and adds it o the list
                                         String highscoreString = user + ": " + snapshot.getData().get("score").toString();
 
-                                        Log.i(TAG, highscoreString);
                                         highscores.add(highscoreString);
                                     }
 
                                     //  TODO: order highscores
-                                    
+
                                     //  Displays the high scores on screen
                                     ListView scoreboard = findViewById(R.id.highscoreListView);
                                     ArrayAdapter<String> mAdapter = new ArrayAdapter<>(HighscoresActivity.this,
@@ -91,6 +90,8 @@ public class HighscoresActivity extends AppCompatActivity {
                                             }
                                         }
                                     });
+                                } else {
+                                    Log.e(TAG, task.getException().getMessage());
                                 }
                             }
                         });
@@ -109,11 +110,9 @@ public class HighscoresActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()) {
-            case QUIZ_MENU_ID:
-                startActivity(new Intent(this, QuizActivity.class));
-                break;
-        }
+        //  Takes the user back to the quiz.
+        if (item.getItemId() == QUIZ_MENU_ID)
+            startActivity(new Intent(this, QuizActivity.class));
 
         return super.onOptionsItemSelected(item);
     }
