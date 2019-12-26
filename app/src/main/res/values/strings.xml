@@ -3,6 +3,7 @@
     <string name="app_name">Flag Quiz</string>
     <string name="login">Login</string>
     <string name="user_highscores">My Scoreboard</string>
+    <string name="global_scoreboard">High Scores</string>
 
     <!-- Quiz Strings -->
     <string name="quiz_title">Ten Question Flag Quiz</string>

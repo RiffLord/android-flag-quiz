@@ -37,6 +37,8 @@ public class HighscoresActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_highscores);
 
+        setTitle(R.string.global_scoreboard);
+
         mAuth = FirebaseAuth.getInstance();
         mFirestore = FirebaseFirestore.getInstance();
 
