@@ -51,6 +51,7 @@ public class HighscoresActivity extends AppCompatActivity {
 
                     //  Iterates through the user documents
                     for (QueryDocumentSnapshot document : task.getResult()) {
+                        final String user = document.getData().get("user").toString();
 
                         //  Obtains the high score for each user
                         final Query highscore = document.getReference().collection("quiz-results");
@@ -61,11 +62,10 @@ public class HighscoresActivity extends AppCompatActivity {
                                 if (task.isSuccessful()) {
                                     for (QueryDocumentSnapshot snapshot : task.getResult()) {
                                         //  Stores the username and high score and adds it o the list
-                                        String highscore = snapshot.getReference().getParent()
-                                                .getParent().getId() + ": " + snapshot.getData().get("score").toString();
+                                        String highscoreString = user + ": " + snapshot.getData().get("score").toString();
 
-                                        Log.i(TAG, highscore);
-                                        highscores.add(highscore);
+                                        Log.i(TAG, highscoreString);
+                                        highscores.add(highscoreString);
                                     }
 
                                     //  TODO: order highscores
@@ -84,7 +84,7 @@ public class HighscoresActivity extends AppCompatActivity {
                                             String username = (String) parent.getItemAtPosition(position);
 
                                             if (username.substring(0, username.lastIndexOf(':'))
-                                                    .equals(mAuth.getCurrentUser().getEmail())) {
+                                                    .equals(mAuth.getCurrentUser().getDisplayName())) {
                                                 Intent userScoreboardIntent = new Intent(HighscoresActivity.this,
                                                         UserActivity.class);
                                                 startActivity(userScoreboardIntent);

@@ -1,8 +1,12 @@
 package com.pezer.flagquiz;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,6 +26,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
 
 //  Prompts the user to sign up or log in with an e-mail address & password using Firebase Authentication
 public class LoginActivity extends AppCompatActivity {
@@ -30,6 +35,9 @@ public class LoginActivity extends AppCompatActivity {
     //  UI Elements
     private EditText mEmailEditText;
     private EditText mPassEditText;
+
+    private Button mLoginButton;
+    private Button mRegisterButton;
 
     private LinearLayout mAuthLayout;
     private boolean authProgress = false;
@@ -54,21 +62,41 @@ public class LoginActivity extends AppCompatActivity {
         //  Initialize Firebase
         mAuth = FirebaseAuth.getInstance();
 
-        //  A single button is used to handle account creation and signing in existing users
-        final Button loginButton = findViewById(R.id.loginButton);
-        loginButton.setOnClickListener(new View.OnClickListener() {
+        mRegisterButton = findViewById(R.id.registerButton);
+        mRegisterButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideKeyboard(LoginActivity.this);
+                callAuthProgressLayout();
+                mRegisterButton.setEnabled(false);
+                mLoginButton.setEnabled(false);
+
+                //  Ensures that the e-mail and password EditTexts aren't empty
+                if (!mEmailEditText.getText().toString().equals("") && !mPassEditText.getText().toString().equals("")) {
+                    createAccount(mEmailEditText.getText().toString(), mPassEditText.getText().toString());
+                } else {
+                    Toast.makeText(LoginActivity.this, "Please enter valid credentials.", Toast.LENGTH_SHORT).show();
+                    restoreLayout();
+                }
+            }
+        });
+
+        mLoginButton = findViewById(R.id.loginButton);
+        mLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 hideKeyboard(LoginActivity.this);
                 //  Disables the layout while the authentication process lasts
-                callAuthLayout();
-                loginButton.setEnabled(false);
+                callAuthProgressLayout();
+                mLoginButton.setEnabled(false);
+                mRegisterButton.setEnabled(false);
+
                 //  Ensures that the e-mail and password EditTexts aren't empty
                 if (!mEmailEditText.getText().toString().equals("") && !mPassEditText.getText().toString().equals("")) {
-                    //  TODO: add check to ensure the entered e-mail address exists
-                    createAccount(mEmailEditText.getText().toString(), mPassEditText.getText().toString());
+                    signIn(mEmailEditText.getText().toString(), mPassEditText.getText().toString());
                 } else {
                     Toast.makeText(LoginActivity.this, "Please enter valid credentials.", Toast.LENGTH_SHORT).show();
+                    restoreLayout();
                 }
             }
         });
@@ -80,7 +108,7 @@ public class LoginActivity extends AppCompatActivity {
 
         if (authProgress = true) restoreLayout();
 
-        //  Checks if user is already signed in, upating UI accordingly
+        //  Checks if user is already signed in, updating UI accordingly
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
             mEmailEditText.setText(user.getEmail());
@@ -97,29 +125,68 @@ public class LoginActivity extends AppCompatActivity {
         mAuth.createUserWithEmailAndPassword(email, pass).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(Task<AuthResult> task) {
-                if (task.isSuccessful()) {   //  New user created
-                    //  TODO: implement a display name for use in HighscoresActivity, check for valid e-mail address
-                    signIn(email, pass);
-                } else { //  Invalid e-mail address or password or any other error
-                    if (task.getException() instanceof FirebaseAuthUserCollisionException) {
-                        //   If the credentials correspond to an existing user, log them in
-                        signIn(email, pass);
-                    } else if (task.getException() instanceof FirebaseAuthInvalidUserException) {
-                        //  If invalid e-mail address is given
-                        displayError(mError, task.getException());
-                    } else if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
-                        //  If wrong password is given
-                        displayError(mError, task.getException());
-                    } else {
-                        displayError(mError, task.getException());
+                if (!task.isSuccessful()) {
+                    try {
+                        throw task.getException();
+                    } catch (FirebaseAuthInvalidCredentialsException e) {
+                        Log.e(TAG, "Invalid credentials..." + e.getMessage());
+                        displayError(mError, e);
+                    } catch (FirebaseAuthUserCollisionException e) {
+                        Log.e(TAG, "User with this e-mail address already exists..." + e.getMessage());
+                        displayError(mError, e);
+                    } catch (Exception e) {
+                        displayError(mError, e);
                     }
 
-                    //   Clear the edit text boxes
-                    mEmailEditText.setText("");
-                    mPassEditText.setText("");
+                    clearEditTexts();
+                    restoreLayout();
+                } else {
+                    Log.i(TAG, "CURRENT USER" + mAuth.getCurrentUser().getEmail());
+                    setDisplayName(mAuth.getCurrentUser(), email, pass);
                 }
             }
         });
+    }
+
+    //  Allows user to choose their display name
+    private void setDisplayName(final FirebaseUser firebaseUser, final String email, final String pass) {
+        final Dialog displayNameDialog = new Dialog(LoginActivity.this);
+        displayNameDialog.setContentView(R.layout.dialog_display_name);
+
+        Button setDisplayNameButton = (Button) displayNameDialog.findViewById(R.id.setDisplayNameButton);
+        setDisplayNameButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EditText editText = (EditText) displayNameDialog.findViewById(R.id.displayNameEditText);
+                final String displayName = editText.getText().toString();
+
+                if (!displayName.equals("")) {
+                    displayNameDialog.dismiss();
+
+                    firebaseUser.sendEmailVerification().addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            if (task.isSuccessful()) {
+                                UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                                        .setDisplayName(displayName).build();
+                                firebaseUser.updateProfile(profileUpdates);
+
+                                signIn(email, pass);
+                            } else {
+                                displayError(mError, task.getException());
+                            }
+                        }
+                    });
+                } else {
+                    Toast.makeText(LoginActivity.this,
+                            "Please choose a display name",
+                            Toast.LENGTH_LONG).show();
+                }
+
+            }
+        });
+
+        displayNameDialog.show();
     }
 
     //  Signs in an existing user to Firebase
@@ -127,15 +194,22 @@ public class LoginActivity extends AppCompatActivity {
         mAuth.signInWithEmailAndPassword(email, pass).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(Task<AuthResult> task) {
-                //  TODO: check for correct password
-                if (task.isSuccessful()) {
-                    startQuiz();    //  Begins the quiz
-                } else {
-                    Log.e(TAG, "signInWithEmail:failure... " + task.getException().toString());
-                    displayError(mError, task.getException());
+                if (!task.isSuccessful()) {
+                    try {
+                        throw task.getException();
+                    } catch (FirebaseAuthInvalidUserException e) {
+                        Log.e(TAG, "This e-mail doesn't exist..." + e.getMessage());
+                        displayError(mError, e);
+                    } catch (FirebaseAuthInvalidCredentialsException e) {
+                        Log.e(TAG, "Wrong password..." + e.getMessage());
+                        displayError(mError, e);
+                    } catch (Exception e) {
+                        displayError(mError, e);
+                    }
 
+                    clearEditTexts();
                     restoreLayout();
-                }
+                } else startQuiz();
             }
         });
     }
@@ -148,8 +222,13 @@ public class LoginActivity extends AppCompatActivity {
                 .replace(": ", ""), Toast.LENGTH_SHORT).show();
     }
 
+    private void clearEditTexts() {
+        //   Clear the edit text boxes
+        mEmailEditText.getText().clear();
+        mPassEditText.getText().clear();
+    }
 
-    private void callAuthLayout() {
+    private void callAuthProgressLayout() {
         authProgress = true;
 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
@@ -168,12 +247,12 @@ public class LoginActivity extends AppCompatActivity {
         input.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
+    //  Restores the original layout and makes the UI clickable
     private void restoreLayout() {
-        //  Restores the original layout and makes the UI clickable
         mAuthLayout.setVisibility(View.GONE);
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-        Button loginButton = findViewById(R.id.loginButton);
-        loginButton.setEnabled(true);
+        mLoginButton.setEnabled(true);
+        mRegisterButton.setEnabled(true);
 
         authProgress = false;
     }

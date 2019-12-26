@@ -99,6 +99,8 @@ public class QuizActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mScores = FirebaseFirestore.getInstance();
 
+        Log.i(TAG, "USER DISPLAY NAME: " + mAuth.getCurrentUser().getDisplayName());
+
         //  Initializing everything necessary for the quiz
 
         mFilenameList = new ArrayList<>();
@@ -470,7 +472,7 @@ public class QuizActivity extends AppCompatActivity {
 
                                 //  Hack to ensure the user document is instantiated.
                                 Map<String, Object> userData = new HashMap<>();
-                                userData.put("user", user.getEmail());
+                                userData.put("user", user.getDisplayName());
                                 snapshot.getReference().set(userData);
 
                                 //  Writes the result of the quiz to Firestore.
