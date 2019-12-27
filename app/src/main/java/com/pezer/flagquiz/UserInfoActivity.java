@@ -25,23 +25,24 @@ import com.google.firebase.firestore.QuerySnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserActivity extends AppCompatActivity {
-    private static final String TAG = "UserActivity";
+public class UserInfoActivity extends AppCompatActivity {
+    private static final String TAG = "UserInfoActivity";
+
     //  Keys for Firestore access
     private static final String USER_COLLECTION = "scoreboards";
     private static final String SCORE_COLLECTION = "quiz-results";
     private static final String SCORE_KEY = "score";
 
-    //  Menu ID constants
-    private final int GLOBALSCORES_MENU_ID = Menu.FIRST;
-    private final int LOGOUT_MENU_ID = Menu.FIRST + 1;
-
     private FirebaseAuth mAuth;
+
+    //  Menu ID constants
+    private final int GLOBAL_SCOREBOARD_MENU_ID = Menu.FIRST;
+    private final int LOGOUT_MENU_ID = Menu.FIRST + 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_user);
+        setContentView(R.layout.activity_user_info);
 
         mAuth = FirebaseAuth.getInstance();
     }
@@ -58,8 +59,10 @@ public class UserActivity extends AppCompatActivity {
             setTitle(user.getEmail());
 
             //  Obtains this user's scoreboard from Firestore
-            FirebaseFirestore mFirestore = FirebaseFirestore.getInstance();
-            Query query = mFirestore.collection(USER_COLLECTION).document(user.getEmail()).collection(SCORE_COLLECTION);
+            FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+
+            //  Firestore query, asks for the user's scores in ascending order (lower number of guesses = higher score).
+            Query query = firestore.collection(USER_COLLECTION).document(user.getEmail()).collection(SCORE_COLLECTION);
             query.orderBy(SCORE_KEY, Query.Direction.ASCENDING).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                 @Override
                 public void onComplete(@NonNull Task<QuerySnapshot> task) {
@@ -74,14 +77,14 @@ public class UserActivity extends AppCompatActivity {
                         //  Displays the user's scoreboard on screen
                         ListView scoreList = findViewById(R.id.userScoreListView);
                         ArrayAdapter<String> listAdapter = new ArrayAdapter<>(
-                                UserActivity.this,
+                                UserInfoActivity.this,
                                 android.R.layout.simple_list_item_1,
                                 scoreboard);
                         scoreList.setAdapter(listAdapter);
                     } else {
                         Log.e(TAG, task.getException().toString());
 
-                        Toast.makeText(UserActivity.this, "Error reading scoreboard for " + user.getEmail(),
+                        Toast.makeText(UserInfoActivity.this, "Error reading scoreboard for " + user.getEmail(),
                                 Toast.LENGTH_SHORT).show();
                     }
                 }
@@ -91,7 +94,7 @@ public class UserActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, GLOBALSCORES_MENU_ID, Menu.NONE, R.string.highscores).setIcon(R.drawable.baseline_emoji_events_black_18dp_2);
+        menu.add(Menu.NONE, GLOBAL_SCOREBOARD_MENU_ID, Menu.NONE, R.string.highscores).setIcon(R.drawable.baseline_emoji_events_black_18dp_2);
         menu.add(Menu.NONE, LOGOUT_MENU_ID, Menu.NONE, R.string.logout).setIcon(R.drawable.baseline_account_circle_black_18dp_2);
 
         if (menu instanceof MenuBuilder) {
@@ -105,9 +108,10 @@ public class UserActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
-            case GLOBALSCORES_MENU_ID:
-                Intent highscoresIntent = new Intent(this, HighscoresActivity.class);
-                startActivity(highscoresIntent);
+            case GLOBAL_SCOREBOARD_MENU_ID:
+                //  Takes the user to the global scoreboard Activity.
+                Intent globalScoreboardIntent = new Intent(this, GlobalScoreboardActivity.class);
+                startActivity(globalScoreboardIntent);
                 break;
             case LOGOUT_MENU_ID:
                 signOut();
@@ -120,7 +124,7 @@ public class UserActivity extends AppCompatActivity {
     private void signOut() {
         mAuth.signOut();
         if (mAuth.getCurrentUser() == null) {
-            Intent loginIntent = new Intent(this, LoginActivity.class);
+            Intent loginIntent = new Intent(this, AuthenticationActivity.class);
             startActivity(loginIntent);
         }
     }

@@ -5,7 +5,7 @@
     android:background="@color/background_color"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".LoginActivity">
+    tools:context=".AuthenticationActivity">
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/appTitleTextView"
@@ -33,7 +33,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:autofillHints="@string/email_hint"/>
+        android:importantForAutofill="no"/>
 
     <Space
         android:layout_width="16dp"
@@ -58,7 +58,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:autofillHints="@string/password_hint" />
+        android:importantForAutofill="no" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/loginButton"
@@ -70,8 +70,7 @@
         app:layout_constraintHorizontal_bias="0.306"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.632"
-        android:elevation="2dp"/>
+        app:layout_constraintVertical_bias="0.632" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/registerButton"
@@ -83,8 +82,7 @@
         app:layout_constraintHorizontal_bias="0.693"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.632"
-        android:elevation="2dp"/>
+        app:layout_constraintVertical_bias="0.632" />
 
     <LinearLayout
         android:id="@+id/authLayout"

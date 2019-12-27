@@ -23,16 +23,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
-import android.widget.TextView;
 
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textview.MaterialTextView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -76,8 +75,8 @@ public class QuizActivity extends AppCompatActivity {
     private Animation mShakeAnimation;
 
     //  UI Elements
-    private TextView mAnswerTextView;
-    private TextView mQuestionNumberTextView;
+    private MaterialTextView mAnswerTextView;
+    private MaterialTextView mQuestionNumberTextView;
     private ImageView mFlagImageView;
     private TableLayout mButtonTableLayout;
 
@@ -87,6 +86,7 @@ public class QuizActivity extends AppCompatActivity {
     private final int USER_MENU_ID = Menu.FIRST + 2;
     private final int HIGHSCORES_MENU_ID = Menu.FIRST + 3;
 
+    //  Allow access to Firebase services
     private FirebaseAuth mAuth;
     private FirebaseFirestore mScores;
 
@@ -101,8 +101,6 @@ public class QuizActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mScores = FirebaseFirestore.getInstance();
 
-        Log.i(TAG, "USER DISPLAY NAME: " + mAuth.getCurrentUser().getDisplayName());
-
         //  Initializing everything necessary for the quiz
 
         mFilenameList = new ArrayList<>();
@@ -111,10 +109,12 @@ public class QuizActivity extends AppCompatActivity {
         mRandom = new Random();
         mHandler = new Handler();
 
+        //  Initializes the animation to be called when a wrong answer is pressed.
         mShakeAnimation = AnimationUtils.loadAnimation(this, R.anim.incorrect_shake);
         mShakeAnimation.setRepeatCount(3);
 
         //  Set up GUI components
+
         mQuestionNumberTextView = findViewById(R.id.questionNumberTextView);
         mFlagImageView = findViewById(R.id.flagImageView);
         mButtonTableLayout = findViewById(R.id.buttonTableLayout);
@@ -123,7 +123,6 @@ public class QuizActivity extends AppCompatActivity {
         String questionCounter = getResources().getString(R.string.question) +
                 " 1 " + getResources().getString(R.string.of) + " 10";
         mQuestionNumberTextView.setText(questionCounter);
-
 
         //  Reads the number of guess button rows from SharedPreferences, the default being 1 row.
         mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);
@@ -152,7 +151,6 @@ public class QuizActivity extends AppCompatActivity {
         menu.add(Menu.NONE, USER_MENU_ID, Menu.NONE, R.string.user).setIcon(R.drawable.baseline_person_black_18dp_2);
         menu.add(Menu.NONE, HIGHSCORES_MENU_ID, Menu.NONE, R.string.highscores).setIcon(R.drawable.baseline_emoji_events_black_18dp_2);
 
-
         if (menu instanceof MenuBuilder) {
             MenuBuilder m = (MenuBuilder) menu;
             m.setOptionalIconsVisible(true);
@@ -168,6 +166,7 @@ public class QuizActivity extends AppCompatActivity {
                 //  Creates a list of the number of answer choices
                 final String[] choices = getResources().getStringArray(R.array.guessesList);
 
+                //  The AlertDialog presents the quiz options to the user.
                 AlertDialog.Builder choicesBuilder = new AlertDialog.Builder(this);
                 choicesBuilder.setTitle(R.string.choices);
 
@@ -228,6 +227,8 @@ public class QuizActivity extends AppCompatActivity {
                                 SharedPreferences.Editor prefEditor = mQuizSettings.edit();
                                 //  Used to transform the HashMap of included regions to a JSON object.
                                 Gson gson = new Gson();
+
+                                //  Saves the settings in the SharedPreferences
                                 String includedRegions = gson.toJson(mRegionsMap);
                                 prefEditor.putString(PREF_REGIONS, includedRegions).apply();
 
@@ -242,12 +243,12 @@ public class QuizActivity extends AppCompatActivity {
                 break;
             case USER_MENU_ID:
                 //  Takes the user to their personal scoreboard Activity.
-                Intent userIntent = new Intent(this, UserActivity.class);
+                Intent userIntent = new Intent(this, UserInfoActivity.class);
                 startActivity(userIntent);
                 break;
             case HIGHSCORES_MENU_ID:
                 //  Takes the user to the global high scores Activity.
-                Intent scoresIntent = new Intent(this, HighscoresActivity.class);
+                Intent scoresIntent = new Intent(this, GlobalScoreboardActivity.class);
                 startActivity(scoresIntent);
                 break;
         }
@@ -259,7 +260,7 @@ public class QuizActivity extends AppCompatActivity {
     private View.OnClickListener mGuessButtonListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            submitGuess((Button) v);
+            submitGuess((MaterialButton) v);
         }
     };
 
@@ -356,7 +357,7 @@ public class QuizActivity extends AppCompatActivity {
 
             for (int column = 0; column < 3; column++) {
                 //  Creates a new button
-                Button newGuessButton = (Button) inflater.inflate(R.layout.guess_button, currentRow, false);
+                MaterialButton newGuessButton = (MaterialButton) inflater.inflate(R.layout.guess_button, currentRow, false);
                 newGuessButton.getLayoutParams().height = TableRow.LayoutParams.MATCH_PARENT;
 
                 //  Obtains a country name and sets it as the button's text.
@@ -373,7 +374,7 @@ public class QuizActivity extends AppCompatActivity {
         int column = mRandom.nextInt(3);
         TableRow randomRow = getTableRow(row);
         String countryName = getCountryName(m_sCorrectAnswer);
-        ((Button) randomRow.getChildAt(column)).setText(countryName);
+        ((MaterialButton) randomRow.getChildAt(column)).setText(countryName);
     }
 
     //  Returns a row of guess buttons.
@@ -383,7 +384,7 @@ public class QuizActivity extends AppCompatActivity {
     private String getCountryName(String name) { return name.substring(name.indexOf('-') + 1).replace('_', ' '); }
 
     //  Called when the user presses a guess button.
-    private void submitGuess(Button guessButton) {
+    private void submitGuess(MaterialButton guessButton) {
         //  Obtains the text from the button pressed by the user
         String guess = guessButton.getText().toString();
         //  Obtains the correct answer
@@ -458,6 +459,7 @@ public class QuizActivity extends AppCompatActivity {
 
     //  Saves the result of the current quiz session to a Firestore document representing the user
     private void saveToFirestore(final String score) {
+
         if (mAuth.getCurrentUser() != null) {
             final FirebaseUser user = mAuth.getCurrentUser();
             final Map<String, Object> quizResult = new HashMap<>();
@@ -475,6 +477,7 @@ public class QuizActivity extends AppCompatActivity {
                                 DocumentSnapshot snapshot = task.getResult();
 
                                 //  Hack to ensure the user document is instantiated.
+                                //  Stores the user's display name in the first document.
                                 Map<String, Object> userData = new HashMap<>();
                                 userData.put("user", user.getDisplayName());
                                 snapshot.getReference().set(userData);

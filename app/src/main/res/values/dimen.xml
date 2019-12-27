@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- UI Element Sizes -->
     <dimen name="title_size">25sp</dimen>
     <dimen name="flag_width">227dp</dimen>
     <dimen name="flag_height">150dp</dimen>
     <dimen name="answer_size">40sp</dimen>
     <dimen name="text_size">20sp</dimen>
 
+    <!-- Activity Margins -->
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
 </resources>

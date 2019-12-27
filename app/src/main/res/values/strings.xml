@@ -1,8 +1,8 @@
 <resources>
     <!-- Activity Titles -->
     <string name="app_name">Flag Quiz</string>
-    <string name="login">Login</string>
-    <string name="user_highscores">My Scoreboard</string>
+    <string name="personal_scoreboard">My Scoreboard</string>
+    <string name="login">Log In</string>
     <string name="global_scoreboard">High Scores</string>
 
     <!-- Quiz Strings -->
@@ -14,7 +14,6 @@
     <string name="incorrect">Incorrect!</string>
     <string name="of">of</string>
     <string name="reset_quiz">Reset Quiz</string>
-    <string name="flagImageViewDesc">This ImageView contains the flag to guess.</string>
 
     <!-- Menu Strings -->
     <string name="choices">Select Number of Choices</string>
@@ -48,6 +47,7 @@
     <string name="display_name_hint">Your Display Name</string>
     <string name="display_name_autoFill_hint">display name</string>
     <string name="display_name_button">Create Account</string>
+    <string name="flagImageViewDesc">This ImageView contains the flag to guess.</string>
 
 
 </resources>

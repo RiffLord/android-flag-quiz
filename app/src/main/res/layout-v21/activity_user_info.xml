@@ -9,10 +9,21 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
-    tools:context=".HighscoresActivity">
+    tools:context=".UserInfoActivity">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/titleTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/activity_vertical_margin"
+        android:text="@string/personal_scoreboard"
+        android:textSize="@dimen/title_size"
+        android:textColor="@color/text_color"
+        android:elevation="4dp"/>
 
     <ListView
-        android:id="@+id/highscoreListView"
+        android:id="@+id/userScoreListView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_gravity="center"

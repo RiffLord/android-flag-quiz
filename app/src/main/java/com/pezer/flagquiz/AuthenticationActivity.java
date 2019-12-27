@@ -11,13 +11,13 @@ import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
@@ -26,35 +26,32 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 
-//  Prompts the user to sign up or log in with an e-mail address & password using Firebase Authentication
-public class LoginActivity extends AppCompatActivity {
-    private static String TAG = "LoginActivity";
+//  Prompts the user to sign up or log in with an e-mail address & password using Firebase Authentication.
+public class AuthenticationActivity extends AppCompatActivity {
+    private static String TAG = "AuthenticationActivity";
 
     //  UI Elements
-    private EditText mEmailEditText;
-    private EditText mPassEditText;
+    private TextInputEditText mEmailEditText;
+    private TextInputEditText mPassEditText;
+    private MaterialButton mLoginButton;
+    private MaterialButton mRegisterButton;
 
-    private Button mLoginButton;
-    private Button mRegisterButton;
+    private LinearLayout mAuthProgressLayout;   //  Secondary layout set during authentication.
+    private boolean authProgress = false;       //  Used to check the state of the Activity's layout.
 
-    private LinearLayout mAuthLayout;
-    private boolean authProgress = false;
-
-    //  Handles user account creation & login
+    //  Handles user account creation & login.
     private FirebaseAuth mAuth;
-
-    //  TODO: code cleanup & refactoring
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
+        setContentView(R.layout.activity_authentication);
         setTitle(R.string.login);
 
         mEmailEditText = findViewById(R.id.emailEditText);
         mPassEditText = findViewById(R.id.passwordEditText);
 
-        mAuthLayout = findViewById(R.id.authLayout);
+        mAuthProgressLayout = findViewById(R.id.authLayout);
 
         //  Initialize Firebase
         mAuth = FirebaseAuth.getInstance();
@@ -63,17 +60,16 @@ public class LoginActivity extends AppCompatActivity {
         mRegisterButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                hideKeyboard(LoginActivity.this);
-                callAuthProgressLayout();
+                hideKeyboard(AuthenticationActivity.this);
                 mRegisterButton.setEnabled(false);
                 mLoginButton.setEnabled(false);
 
-                //  Ensures that the e-mail and password EditTexts aren't empty
+                //  Ensures that the e-mail and password EditTexts aren't empty.
                 if (!mEmailEditText.getText().toString().equals("") && !mPassEditText.getText().toString().equals("")) {
                     createAccount(mEmailEditText.getText().toString(), mPassEditText.getText().toString());
                 } else {
-                    Toast.makeText(LoginActivity.this, "Please enter valid credentials.", Toast.LENGTH_SHORT).show();
-                    restoreLayout();
+                    Toast.makeText(AuthenticationActivity.this, "Please enter valid credentials.", Toast.LENGTH_SHORT).show();
+                    restoreLayout();    //  Allows the user to try entering their credentials again.
                 }
             }
         });
@@ -82,17 +78,17 @@ public class LoginActivity extends AppCompatActivity {
         mLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                hideKeyboard(LoginActivity.this);
-                //  Disables the layout while the authentication process lasts
+
+                //  Disables the layout while the authentication process lasts.
                 callAuthProgressLayout();
                 mLoginButton.setEnabled(false);
                 mRegisterButton.setEnabled(false);
 
-                //  Ensures that the e-mail and password EditTexts aren't empty
+                //  Ensures that the e-mail and password EditTexts aren't empty.
                 if (!mEmailEditText.getText().toString().equals("") && !mPassEditText.getText().toString().equals("")) {
                     signIn(mEmailEditText.getText().toString(), mPassEditText.getText().toString());
                 } else {
-                    Toast.makeText(LoginActivity.this, "Please enter valid credentials.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AuthenticationActivity.this, "Please enter valid credentials.", Toast.LENGTH_SHORT).show();
                     restoreLayout();
                 }
             }
@@ -103,9 +99,10 @@ public class LoginActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
+        //  Checks the flag and restores the layout if necessary, enabling control.
         if (authProgress) restoreLayout();
 
-        //  Checks if user is already signed in, updating UI accordingly
+        //  Checks if user is already signed in, updating UI accordingly.
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
             mEmailEditText.setText(user.getEmail());
@@ -117,8 +114,11 @@ public class LoginActivity extends AppCompatActivity {
         startActivity(loginIntent);
     }
 
-    //  Uses FirebaseAuth to create a new user account with e-mail & password
+    //============================== Authentication Methods ==============================//
+
+    //  Uses FirebaseAuth to create a new user account with the e-mail & password provided.
     private void createAccount(final String email, final String pass) {
+
         mAuth.createUserWithEmailAndPassword(email, pass).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
@@ -135,34 +135,43 @@ public class LoginActivity extends AppCompatActivity {
                         displayError(e);
                     }
 
+                    //  Restores layout, allowing the user to try again with new credentials.
                     clearEditTexts();
                     restoreLayout();
                 } else {
+                    //  User account successfully created.
                     setDisplayName(mAuth.getCurrentUser(), email, pass);
                 }
             }
         });
     }
 
-    //  Allows user to choose their display name
+    //  Prompts the user to choose their display name.
     private void setDisplayName(final FirebaseUser firebaseUser, final String email, final String pass) {
-        final Dialog displayNameDialog = new Dialog(LoginActivity.this);
+
+        //  Creates a Dialog for the prompt.
+        final Dialog displayNameDialog = new Dialog(AuthenticationActivity.this);
         displayNameDialog.setContentView(R.layout.dialog_display_name);
 
-        Button setDisplayNameButton = displayNameDialog.findViewById(R.id.setDisplayNameButton);
+        MaterialButton setDisplayNameButton = displayNameDialog.findViewById(R.id.setDisplayNameButton);
         setDisplayNameButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                EditText editText = displayNameDialog.findViewById(R.id.displayNameEditText);
-                final String displayName = editText.getText().toString();
 
-                if (!displayName.equals("")) {
+                //  Obtains a reference to the EditText and assigns its contents to the displayName String.
+                TextInputEditText displayNameEditText = displayNameDialog.findViewById(R.id.displayNameEditText);
+                final String displayName = displayNameEditText.getText().toString();
+
+                if (!displayName.equals("")) {  //  The EditText is not empty...
                     displayNameDialog.dismiss();
 
+                    //  Sends a verification e-mail to the address provided
                     firebaseUser.sendEmailVerification().addOnCompleteListener(new OnCompleteListener<Void>() {
                         @Override
                         public void onComplete(@NonNull Task<Void> task) {
                             if (task.isSuccessful()) {
+
+                                //  Updates the user's profile with the display name entered in the EditText
                                 UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                                         .setDisplayName(displayName).build();
                                 firebaseUser.updateProfile(profileUpdates);
@@ -174,7 +183,8 @@ public class LoginActivity extends AppCompatActivity {
                         }
                     });
                 } else {
-                    Toast.makeText(LoginActivity.this,
+                    //  Notifies the user that the EditText is empty.
+                    Toast.makeText(AuthenticationActivity.this,
                             "Please choose a display name",
                             Toast.LENGTH_LONG).show();
                 }
@@ -187,6 +197,7 @@ public class LoginActivity extends AppCompatActivity {
 
     //  Signs in an existing user to Firebase
     private void signIn(String email, String pass) {
+
         mAuth.signInWithEmailAndPassword(email, pass).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
@@ -203,35 +214,49 @@ public class LoginActivity extends AppCompatActivity {
                         displayError(e);
                     }
 
+                    //  Restores layout, allowing the user to try again with new credentials.
                     clearEditTexts();
                     restoreLayout();
-                } else startQuiz();
+                } else
+                    startQuiz();    //  User has been successfully authenticated.
             }
         });
     }
 
+    //============================== Utility Methods ==============================//
+
+    //  Converts the provided Exception to a string and displays it in a Toast.
     private void displayError(Exception e) {
         String error = e.toString();
 
-        //  Formats the error message and displays it in a Toast.
-        Toast.makeText(LoginActivity.this, error.substring(error.lastIndexOf(": "))
+        //  Formats the error message and displays it.
+        Toast.makeText(AuthenticationActivity.this, error.substring(error.lastIndexOf(": "))
                 .replace(": ", ""), Toast.LENGTH_LONG).show();
     }
 
+    //  Clears the EditTexts if an error occurs during authentication.
     private void clearEditTexts() {
         //   Clear the edit text boxes
         mEmailEditText.getText().clear();
         mPassEditText.getText().clear();
     }
 
+    //  Dims the screen and displays a ProgressBar during authentication.
     private void callAuthProgressLayout() {
-        authProgress = true;
+        authProgress = true;    //  User is being authenticated.
 
+        //  Hides the keyboard.
+        hideKeyboard(AuthenticationActivity.this);
+
+        //  Disables all UI elements.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-        mAuthLayout.setVisibility(View.VISIBLE);
+
+        //  Dims the screen.
+        mAuthProgressLayout.setVisibility(View.VISIBLE);
     }
 
+    //  Hides the keyboard.
     private static void hideKeyboard(Activity activity) {
         InputMethodManager input = (InputMethodManager) activity.getSystemService(INPUT_METHOD_SERVICE);
 
@@ -245,11 +270,13 @@ public class LoginActivity extends AppCompatActivity {
 
     //  Restores the original layout and makes the UI clickable
     private void restoreLayout() {
-        mAuthLayout.setVisibility(View.GONE);
+        mAuthProgressLayout.setVisibility(View.GONE);
+
+        //  Restores control.
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
         mLoginButton.setEnabled(true);
         mRegisterButton.setEnabled(true);
 
-        authProgress = false;
+        authProgress = false;   //  User is no longer being authenticated.
     }
 }
