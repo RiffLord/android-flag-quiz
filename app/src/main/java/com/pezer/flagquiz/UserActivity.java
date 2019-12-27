@@ -2,6 +2,7 @@ package com.pezer.flagquiz;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.menu.MenuBuilder;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -90,8 +91,13 @@ public class UserActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, GLOBALSCORES_MENU_ID, Menu.NONE, R.string.highscores);
-        menu.add(Menu.NONE, LOGOUT_MENU_ID, Menu.NONE, R.string.logout);
+        menu.add(Menu.NONE, GLOBALSCORES_MENU_ID, Menu.NONE, R.string.highscores).setIcon(R.drawable.baseline_emoji_events_black_18dp_2);
+        menu.add(Menu.NONE, LOGOUT_MENU_ID, Menu.NONE, R.string.logout).setIcon(R.drawable.baseline_account_circle_black_18dp_2);
+
+        if (menu instanceof MenuBuilder) {
+            MenuBuilder m = (MenuBuilder) menu;
+            m.setOptionalIconsVisible(true);
+        }
 
         return super.onCreateOptionsMenu(menu);
     }

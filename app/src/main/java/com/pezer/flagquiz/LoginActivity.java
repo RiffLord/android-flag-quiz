@@ -44,12 +44,12 @@ public class LoginActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
 
     //  TODO: code cleanup & refactoring
-    //  TODO: add Material Design elements
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+        setTitle(R.string.login);
 
         mEmailEditText = findViewById(R.id.emailEditText);
         mPassEditText = findViewById(R.id.passwordEditText);

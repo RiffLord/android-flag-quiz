@@ -5,4 +5,6 @@
     android:layout_height="wrap_content"
     android:layout_weight="1"
     android:layout_margin="2dp"
-    style="@style/GuessButton" />
+    android:elevation="2dp"
+    android:textAlignment="center"
+    style="@style/GuessButton"/>

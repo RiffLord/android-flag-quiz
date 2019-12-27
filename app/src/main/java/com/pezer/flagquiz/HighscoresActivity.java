@@ -12,6 +12,7 @@ import android.widget.ListView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.menu.MenuBuilder;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -22,6 +23,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class HighscoresActivity extends AppCompatActivity {
@@ -37,10 +39,10 @@ public class HighscoresActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_highscores);
 
-        setTitle(R.string.global_scoreboard);
-
         mAuth = FirebaseAuth.getInstance();
         mFirestore = FirebaseFirestore.getInstance();
+
+        setTitle(R.string.global_scoreboard);
 
         //  Obtains the global scoreboard from Firestore
         mFirestore = FirebaseFirestore.getInstance();
@@ -64,12 +66,13 @@ public class HighscoresActivity extends AppCompatActivity {
                                 if (task.isSuccessful()) {
                                     for (QueryDocumentSnapshot snapshot : task.getResult()) {
                                         //  Stores the username and high score and adds it o the list
-                                        String highscoreString = user + ": " + snapshot.getData().get("score").toString();
+                                        String highscoreString = snapshot.getData().get("score").toString() + ": " + user;
 
                                         highscores.add(highscoreString);
                                     }
 
-                                    //  TODO: order highscores
+                                    //  Sorts the list of high scores
+                                    Collections.sort(highscores);
 
                                     //  Displays the high scores on screen
                                     ListView scoreboard = findViewById(R.id.highscoreListView);
@@ -84,8 +87,7 @@ public class HighscoresActivity extends AppCompatActivity {
                                         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                                             String username = (String) parent.getItemAtPosition(position);
 
-                                            if (username.substring(0, username.lastIndexOf(':'))
-                                                    .equals(mAuth.getCurrentUser().getDisplayName())) {
+                                            if (username.contains(mAuth.getCurrentUser().getDisplayName())) {
                                                 Intent userScoreboardIntent = new Intent(HighscoresActivity.this,
                                                         UserActivity.class);
                                                 startActivity(userScoreboardIntent);
@@ -105,7 +107,12 @@ public class HighscoresActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, QUIZ_MENU_ID, Menu.NONE, R.string.quiz);
+        menu.add(Menu.NONE, QUIZ_MENU_ID, Menu.NONE, R.string.quiz).setShowAsAction(1);
+
+        if (menu instanceof MenuBuilder) {
+            MenuBuilder m = (MenuBuilder) menu;
+            m.setOptionalIconsVisible(true);
+        }
 
         return super.onCreateOptionsMenu(menu);
     }
@@ -113,8 +120,9 @@ public class HighscoresActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         //  Takes the user back to the quiz.
-        if (item.getItemId() == QUIZ_MENU_ID)
+        if (item.getItemId() == QUIZ_MENU_ID) {
             startActivity(new Intent(this, QuizActivity.class));
+        }
 
         return super.onOptionsItemSelected(item);
     }

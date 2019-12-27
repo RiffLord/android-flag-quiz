@@ -3,6 +3,7 @@ package com.pezer.flagquiz;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.menu.MenuBuilder;
 
 import android.content.Context;
 import android.content.DialogInterface;
@@ -31,6 +32,7 @@ import android.widget.TextView;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -99,6 +101,8 @@ public class QuizActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mScores = FirebaseFirestore.getInstance();
 
+        Log.i(TAG, "USER DISPLAY NAME: " + mAuth.getCurrentUser().getDisplayName());
+
         //  Initializing everything necessary for the quiz
 
         mFilenameList = new ArrayList<>();
@@ -119,13 +123,7 @@ public class QuizActivity extends AppCompatActivity {
         String questionCounter = getResources().getString(R.string.question) +
                 " 1 " + getResources().getString(R.string.of) + " 10";
         mQuestionNumberTextView.setText(questionCounter);
-    }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        //  TODO:   fix quiz restart after onPause
 
         //  Reads the number of guess button rows from SharedPreferences, the default being 1 row.
         mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);
@@ -149,10 +147,16 @@ public class QuizActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, CHOICES_MENU_ID, Menu.NONE, R.string.choices);
-        menu.add(Menu.NONE, REGIONS_MENU_ID, Menu.NONE, R.string.regions);
-        menu.add(Menu.NONE, USER_MENU_ID, Menu.NONE, R.string.user);
-        menu.add(Menu.NONE, HIGHSCORES_MENU_ID, Menu.NONE, R.string.highscores);
+        menu.add(Menu.NONE, CHOICES_MENU_ID, Menu.NONE, R.string.choices).setIcon(R.drawable.baseline_clear_all_black_18dp_2);
+        menu.add(Menu.NONE, REGIONS_MENU_ID, Menu.NONE, R.string.regions).setIcon(R.drawable.baseline_check_box_black_18dp_2);
+        menu.add(Menu.NONE, USER_MENU_ID, Menu.NONE, R.string.user).setIcon(R.drawable.baseline_person_black_18dp_2);
+        menu.add(Menu.NONE, HIGHSCORES_MENU_ID, Menu.NONE, R.string.highscores).setIcon(R.drawable.baseline_emoji_events_black_18dp_2);
+
+
+        if (menu instanceof MenuBuilder) {
+            MenuBuilder m = (MenuBuilder) menu;
+            m.setOptionalIconsVisible(true);
+        }
 
         return super.onCreateOptionsMenu(menu);
     }

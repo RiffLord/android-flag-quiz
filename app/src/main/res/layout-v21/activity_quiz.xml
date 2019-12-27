@@ -34,12 +34,13 @@
         android:layout_gravity="center"
         android:gravity="center"/>
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/flagImageView"
-        android:adjustViewBounds="false"
-        android:layout_width="@dimen/flag_width"
-        android:layout_height="@dimen/flag_height"
-        android:contentDescription="@string/flagImageViewDesc"/>
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/flagImageView"
+            android:adjustViewBounds="false"
+            android:layout_width="@dimen/flag_width"
+            android:layout_height="@dimen/flag_height"
+            android:contentDescription="@string/flagImageViewDesc"
+            android:elevation="8dp"/>
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/guessCountryTextView"
