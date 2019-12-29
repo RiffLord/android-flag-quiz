@@ -15,7 +15,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".GlobalScoreboardActivity"
-            android:label="@string/highscores" />
+            android:label="@string/high_scores" />
         <activity
             android:name=".UserInfoActivity" />
         <activity android:name=".QuizActivity">

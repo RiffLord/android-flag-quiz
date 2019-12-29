@@ -26,6 +26,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
+import android.widget.Toast;
 
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -53,8 +54,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+//  Handles game setup, user interaction & the storing of results.
 public class QuizActivity extends AppCompatActivity {
-    private static final String TAG = "QuizActivity";
 
     //  Shared Preferences resources
     private static final String PREF_CHOICES = "choices_sharedPref";
@@ -83,15 +84,14 @@ public class QuizActivity extends AppCompatActivity {
     //  Menu ID constants
     private final int CHOICES_MENU_ID = Menu.FIRST;
     private final int REGIONS_MENU_ID = Menu.FIRST + 1;
-    private final int USER_MENU_ID = Menu.FIRST + 2;
-    private final int HIGHSCORES_MENU_ID = Menu.FIRST + 3;
+    private final int USER_INFO_MENU_ID = Menu.FIRST + 2;
+    private final int GLOBAL_SCOREBOARD_MENU_ID = Menu.FIRST + 3;
 
     //  Allow access to Firebase services
     private FirebaseAuth mAuth;
     private FirebaseFirestore mScores;
 
     //============================== Override Methods ==============================//
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,23 +124,7 @@ public class QuizActivity extends AppCompatActivity {
                 " 1 " + getResources().getString(R.string.of) + " 10";
         mQuestionNumberTextView.setText(questionCounter);
 
-        //  Reads the number of guess button rows from SharedPreferences, the default being 1 row.
-        mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);
-        m_nGuessRows = mQuizSettings.getInt(PREF_CHOICES, 1);
-
-        //  Checks SharedPreferences to see which regions to include in the quiz.
-        if (mQuizSettings.getString(PREF_REGIONS, null) != null) {
-            Gson gson = new Gson();
-            String jsonRegions = mQuizSettings.getString(PREF_REGIONS, null);
-            Type type = new TypeToken<HashMap<String, Boolean>>() {}.getType();
-            mRegionsMap = gson.fromJson(jsonRegions, type);
-        } else {    //  Default settings, if nothing is stored in SharedPreferences
-            //  Obtain the array of regions from strings.xml
-            String[] regionNames = getResources().getStringArray(R.array.regionsList);
-            //  Choose all regions
-            for (String region : regionNames) mRegionsMap.put(region, true);
-        }
-
+        loadQuizSettings();
         resetQuiz();
     }
 
@@ -148,8 +132,8 @@ public class QuizActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(Menu.NONE, CHOICES_MENU_ID, Menu.NONE, R.string.choices).setIcon(R.drawable.baseline_clear_all_black_18dp_2);
         menu.add(Menu.NONE, REGIONS_MENU_ID, Menu.NONE, R.string.regions).setIcon(R.drawable.baseline_check_box_black_18dp_2);
-        menu.add(Menu.NONE, USER_MENU_ID, Menu.NONE, R.string.user).setIcon(R.drawable.baseline_person_black_18dp_2);
-        menu.add(Menu.NONE, HIGHSCORES_MENU_ID, Menu.NONE, R.string.highscores).setIcon(R.drawable.baseline_emoji_events_black_18dp_2);
+        menu.add(Menu.NONE, USER_INFO_MENU_ID, Menu.NONE, R.string.user).setIcon(R.drawable.baseline_person_black_18dp_2);
+        menu.add(Menu.NONE, GLOBAL_SCOREBOARD_MENU_ID, Menu.NONE, R.string.high_scores).setIcon(R.drawable.baseline_emoji_events_black_18dp_2);
 
         if (menu instanceof MenuBuilder) {
             MenuBuilder m = (MenuBuilder) menu;
@@ -241,12 +225,12 @@ public class QuizActivity extends AppCompatActivity {
                 regionsDialog.show();
 
                 break;
-            case USER_MENU_ID:
+            case USER_INFO_MENU_ID:
                 //  Takes the user to their personal scoreboard Activity.
                 Intent userIntent = new Intent(this, UserInfoActivity.class);
                 startActivity(userIntent);
                 break;
-            case HIGHSCORES_MENU_ID:
+            case GLOBAL_SCOREBOARD_MENU_ID:
                 //  Takes the user to the global high scores Activity.
                 Intent scoresIntent = new Intent(this, GlobalScoreboardActivity.class);
                 startActivity(scoresIntent);
@@ -285,7 +269,7 @@ public class QuizActivity extends AppCompatActivity {
                 }
             }
         } catch (IOException e) {
-            Log.e(TAG, "Error loading file names", e);
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
         }
 
         //  Resets the correct answer and total guess counters.
@@ -308,6 +292,25 @@ public class QuizActivity extends AppCompatActivity {
         }
 
         loadNextFlag();
+    }
+
+    private void loadQuizSettings() {
+        //  Reads the number of guess button rows from SharedPreferences, the default being 1 row.
+        mQuizSettings = QuizActivity.this.getPreferences(MODE_PRIVATE);
+        m_nGuessRows = mQuizSettings.getInt(PREF_CHOICES, 1);
+
+        //  Checks SharedPreferences to see which regions to include in the quiz.
+        if (mQuizSettings.getString(PREF_REGIONS, null) != null) {
+            Gson gson = new Gson();
+            String jsonRegions = mQuizSettings.getString(PREF_REGIONS, null);
+            Type type = new TypeToken<HashMap<String, Boolean>>() {}.getType();
+            mRegionsMap = gson.fromJson(jsonRegions, type);
+        } else {    //  Default settings, if nothing is stored in SharedPreferences
+            //  Obtain the array of regions from strings.xml
+            String[] regionNames = getResources().getStringArray(R.array.regionsList);
+            //  Choose all regions
+            for (String region : regionNames) mRegionsMap.put(region, true);
+        }
     }
 
     private void loadNextFlag() {
@@ -337,7 +340,7 @@ public class QuizActivity extends AppCompatActivity {
             Drawable flag = Drawable.createFromStream(stream, nextImageName);
             mFlagImageView.setImageDrawable(flag);
         } catch (IOException e) {
-            Log.e(TAG, "Error loading " + nextImageName, e);
+            Toast.makeText(this, "Error loading mage... " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
 
         //  Clears previously displayed answer buttons.
@@ -459,18 +462,16 @@ public class QuizActivity extends AppCompatActivity {
 
     //  Saves the result of the current quiz session to a Firestore document representing the user
     private void saveToFirestore(final String score) {
-
         if (mAuth.getCurrentUser() != null) {
             final FirebaseUser user = mAuth.getCurrentUser();
             final Map<String, Object> quizResult = new HashMap<>();
             quizResult.put("score", score);
 
-            //  Obtains a reference to the document. The document is structured as a collection of user documents,
-            //  each one containing a collection of result. Each result is stored in a new document identified by
-            //  the current time on the user's device
-            DocumentReference document = mScores.collection("scoreboards").document(user.getEmail());
+            //  Obtains a reference to the document associated with the current user. It contains a collection
+            //  of sub-documents in which the results of each quiz are saved.
+            DocumentReference userDocument = mScores.collection("scoreboards").document(user.getEmail());
 
-            document.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            userDocument.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                         @Override
                         public void onComplete(@NonNull Task<DocumentSnapshot> task) {
                             if (task.isSuccessful()) {
@@ -482,7 +483,7 @@ public class QuizActivity extends AppCompatActivity {
                                 userData.put("user", user.getDisplayName());
                                 snapshot.getReference().set(userData);
 
-                                //  Writes the result of the quiz to Firestore.
+                                //  Writes the result of the quiz to Firestore to a new document identified by the current time on the user's device.
                                 snapshot.getReference().collection("quiz-results").document(Calendar.getInstance().getTime().toString())
                                         .get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                                     @Override
@@ -491,7 +492,7 @@ public class QuizActivity extends AppCompatActivity {
                                             DocumentSnapshot snapshot = task.getResult();
                                             snapshot.getReference().set(quizResult);    //  Creates a new document with the result.
                                         } else {
-                                            Log.e(TAG, task.getException().toString());
+                                            Toast.makeText(QuizActivity.this, task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                                         }
                                     }
                                 });

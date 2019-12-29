@@ -6,7 +6,6 @@ import androidx.appcompat.view.menu.MenuBuilder;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
@@ -25,8 +24,9 @@ import com.google.firebase.firestore.QuerySnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+//  Allows the user to view data relevant to them, including a personal scoreboard and the e-mail address
+//  used for the account. Allows the user to log out of the game.
 public class UserInfoActivity extends AppCompatActivity {
-    private static final String TAG = "UserInfoActivity";
 
     //  Keys for Firestore access
     private static final String USER_COLLECTION = "scoreboards";
@@ -58,43 +58,13 @@ public class UserInfoActivity extends AppCompatActivity {
             //  Displays the user's e-mail address on the ActionBar
             setTitle(user.getEmail());
 
-            //  Obtains this user's scoreboard from Firestore
-            FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-
-            //  Firestore query, asks for the user's scores in ascending order (lower number of guesses = higher score).
-            Query query = firestore.collection(USER_COLLECTION).document(user.getEmail()).collection(SCORE_COLLECTION);
-            query.orderBy(SCORE_KEY, Query.Direction.ASCENDING).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                @Override
-                public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                    if (task.isSuccessful()) {
-                        List<String> scoreboard = new ArrayList<>();    //  List for storing scores
-
-                        //  Iterates through the documents containing the user's scores, adding them to the list
-                        for (QueryDocumentSnapshot snapshot : task.getResult()) {
-                            scoreboard.add(snapshot.getData().get(SCORE_KEY).toString());
-                        }
-
-                        //  Displays the user's scoreboard on screen
-                        ListView scoreList = findViewById(R.id.userScoreListView);
-                        ArrayAdapter<String> listAdapter = new ArrayAdapter<>(
-                                UserInfoActivity.this,
-                                android.R.layout.simple_list_item_1,
-                                scoreboard);
-                        scoreList.setAdapter(listAdapter);
-                    } else {
-                        Log.e(TAG, task.getException().toString());
-
-                        Toast.makeText(UserInfoActivity.this, "Error reading scoreboard for " + user.getEmail(),
-                                Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
+            getPersonalScoreboard(user);
         }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, GLOBAL_SCOREBOARD_MENU_ID, Menu.NONE, R.string.highscores).setIcon(R.drawable.baseline_emoji_events_black_18dp_2);
+        menu.add(Menu.NONE, GLOBAL_SCOREBOARD_MENU_ID, Menu.NONE, R.string.high_scores).setIcon(R.drawable.baseline_emoji_events_black_18dp_2);
         menu.add(Menu.NONE, LOGOUT_MENU_ID, Menu.NONE, R.string.logout).setIcon(R.drawable.baseline_account_circle_black_18dp_2);
 
         if (menu instanceof MenuBuilder) {
@@ -121,9 +91,42 @@ public class UserInfoActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private void getPersonalScoreboard(final FirebaseUser u) {
+        //  Obtains this user's scoreboard from Firestore
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+
+        //  Firestore query, asks for the user's scores in ascending order (lower number of guesses = higher score).
+        Query query = firestore.collection(USER_COLLECTION).document(u.getEmail()).collection(SCORE_COLLECTION);
+        query.orderBy(SCORE_KEY, Query.Direction.ASCENDING).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                if (task.isSuccessful()) {
+                    List<String> scoreboard = new ArrayList<>();    //  List for storing scores
+
+                    //  Iterates through the documents containing the user's scores, adding them to the list
+                    for (QueryDocumentSnapshot snapshot : task.getResult()) {
+                        scoreboard.add(snapshot.getData().get(SCORE_KEY).toString());
+                    }
+
+                    //  Displays the user's scoreboard on screen
+                    ListView scoreList = findViewById(R.id.userScoreListView);
+                    ArrayAdapter<String> listAdapter = new ArrayAdapter<>(
+                            UserInfoActivity.this,
+                            android.R.layout.simple_list_item_1,
+                            scoreboard);
+                    scoreList.setAdapter(listAdapter);
+                } else {
+                    Toast.makeText(UserInfoActivity.this, "Error reading scoreboard for " + u.getDisplayName(),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
     private void signOut() {
         mAuth.signOut();
         if (mAuth.getCurrentUser() == null) {
+            //  Takes the user back to the Login screen.
             Intent loginIntent = new Intent(this, AuthenticationActivity.class);
             startActivity(loginIntent);
         }

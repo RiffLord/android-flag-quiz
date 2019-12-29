@@ -19,7 +19,7 @@
     <string name="choices">Select Number of Choices</string>
     <string name="regions">Select Regions</string>
     <string name="user">User Info</string>
-    <string name="highscores">View Global Scoreboard</string>
+    <string name="high_scores">View Global Scoreboard</string>
     <string name="quiz">Back to Quiz</string>
     <string name="logout">Log Out</string>
 
@@ -47,6 +47,7 @@
     <string name="display_name_hint">Your Display Name</string>
     <string name="display_name_autoFill_hint">display name</string>
     <string name="display_name_button">Create Account</string>
+    <string name="verify_account_dialog">Verification Link Sent</string>
     <string name="flagImageViewDesc">This ImageView contains the flag to guess.</string>
 
 
