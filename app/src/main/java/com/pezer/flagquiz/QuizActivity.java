@@ -16,7 +16,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -27,7 +26,6 @@ import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.Toast;
-
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -384,7 +382,7 @@ public class QuizActivity extends AppCompatActivity {
     private TableRow getTableRow(int row) { return (TableRow) mButtonTableLayout.getChildAt(row); }
 
     //  Formats and returns the country name read from the file.
-    private String getCountryName(String name) { return name.substring(name.indexOf('-') + 1).replace('_', ' '); }
+    private String getCountryName(String name) { return name.substring(name.indexOf('-') + 1).replace('_', '\n'); }
 
     //  Called when the user presses a guess button.
     private void submitGuess(MaterialButton guessButton) {

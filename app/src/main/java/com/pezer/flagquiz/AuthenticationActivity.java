@@ -107,7 +107,7 @@ public class AuthenticationActivity extends AppCompatActivity {
         //  Checks if user is already signed in, updating UI accordingly.
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null)
-            mEmailEditText.setText(user.getEmail());
+            startQuiz();
     }
 
     //  Takes the user to the main Activity.
